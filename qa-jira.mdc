@@ -1,0 +1,47 @@
+---
+description: QA test generation from Jira tickets
+globs: .cursor/tickets/*.md
+alwaysApply: false
+---
+
+When the user says "run test for BUG-X" or "analyze BUG-X":
+
+## Step 1 — Read the ticket file
+Open .cursor/tickets/BUG-X.md
+Extract what is broken, which module, which API area.
+
+## Step 2 — Read the codebase
+1. Open the page file listed in the ticket under src/pages/
+2. Open src/api/ and find the relevant API calls
+3. Open src/components/ and find filter or related UI components
+4. Open src/stores/ and check for filter or pagination state
+5. Open e2e/ and read ALL existing feature files and step files
+
+## Step 3 — Understand the bug
+With ticket + real code in front of you:
+- Which component or function is broken?
+- What is expected vs actual behavior?
+- Which API endpoint and React state is involved?
+
+## Step 4 — Write the feature file
+Create e2e/features/jira/BUG-X.feature with:
+- Tag @BUG-X at the top
+- Scenario 1: bug reproduction
+- Scenario 2: happy path
+- Only use step phrases already in e2e/steps/
+
+## Step 5 — Run the test
+Run: npm run test:e2e
+
+## Step 6 — Write the analysis
+Create e2e/reports/analysis/BUG-X.json with:
+- ticketKey, ticketSummary, status
+- failedStep, errorMessage, file
+- rootCause, suggestedFix, codeDiff
+
+## Step 7 — Tell the developer
+Summarize in plain English:
+- What failed
+- Why it failed  
+- Which file to fix
+- Exactly what to change
