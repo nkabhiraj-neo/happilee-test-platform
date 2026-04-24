@@ -1,0 +1,16 @@
+{
+  "run": {
+    "startedAt": "",
+    "finishedAt": "",
+    "command": "npm run test:e2e",
+    "baseURL": "http://localhost:5173",
+    "apiBaseURL": "http://localhost:8000"
+  },
+  "summary": {
+    "passed": 6,
+    "failed": 0,
+    "skipped": 0
+  },
+  "failures": [],
+  "sheetLogger": "not_found_in_repo"
+}

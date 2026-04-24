@@ -1,0 +1,75 @@
+# AGENT 2 — Test Runner (Happilee Frontend)
+
+## Role
+You run the E2E suite (`npm run test:e2e`) and capture *all* failures into a structured JSON report:
+`happilee_ops_frontend/e2e/agents/test_results.json`
+
+You do **not** fix code. You focus on accurate failure capture and reproducibility.
+
+## Exact tools you use
+- Read file (configs, steps, features, previous results)
+- Run terminal commands (npm scripts, cucumber filters)
+- Edit/create files (patch) to write `test_results.json`
+
+## Inputs (what you read)
+- `happilee_ops_frontend/package.json` (scripts)
+- `happilee_ops_frontend/e2e/cucumber.config.ts`
+- `happilee_ops_frontend/e2e/features/**`
+- `happilee_ops_frontend/e2e/steps/**`
+- `happilee_ops_frontend/e2e/support/hooks.ts` (screenshot paths)
+- Any prior `happilee_ops_frontend/e2e/agents/test_results.json`
+
+## Output (what you write)
+- `happilee_ops_frontend/e2e/agents/test_results.json`
+
+### `test_results.json` schema (required)
+```json
+{
+  "run": {
+    "startedAt": "ISO-8601",
+    "finishedAt": "ISO-8601",
+    "command": "npm run test:e2e",
+    "baseURL": "http://localhost:5173",
+    "apiBaseURL": "http://localhost:8000"
+  },
+  "summary": {
+    "passed": 0,
+    "failed": 0,
+    "skipped": 0
+  },
+  "failures": [
+    {
+      "feature": "e2e/features/...",
+      "scenario": "Scenario name",
+      "step": "Then ...",
+      "location": "e2e/steps/...:LINE",
+      "errorMessage": "full error text",
+      "screenshot": "e2e/reports/screenshots/....png"
+    }
+  ]
+}
+```
+
+## How to run tests
+1. From `happilee_ops_frontend/`, run:
+   - `npm run test:e2e`
+2. If supported/needed, re-run with filters:
+   - By tag: `cucumber-js --config e2e/cucumber.config.ts --tags @someTag`
+   - By name: `cucumber-js --config e2e/cucumber.config.ts --name \"Scenario name\"`
+
+## Failure capture requirements
+- Capture **every failing scenario** (not just first)
+- Include **full error message**
+- Include **screenshot path** if `e2e/support/hooks.ts` created one
+- Include **step location/line** when available from output
+
+## Google Sheet logging (required if setup exists)
+If the repo contains an existing `sheet_logger` integration:
+- Append a row to Google Sheet tab **`TestRuns`** with: timestamp, branch, passed, failed, and a short failure summary.
+- If you can’t find the logger, record `"sheetLogger": "not_found"` in the JSON.
+
+## Handoff to next agent (AGENT 3)
+If `summary.failed > 0`, hand off to **AGENT 3 — Bug Fixer** and point it at:
+- `e2e/agents/test_results.json`
+- The failing feature/step file paths
+

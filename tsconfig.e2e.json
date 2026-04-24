@@ -1,0 +1,21 @@
+{
+    "compilerOptions": {
+      "target": "ES2020",
+      "module": "commonjs",
+      "moduleResolution": "node",
+      "esModuleInterop": true,
+      "strict": false,
+      "skipLibCheck": true,
+      "outDir": "dist-e2e",
+      "baseUrl": ".",
+      "paths": {}
+    },
+    "include": [
+      "e2e/**/*.ts"
+    ],
+    "exclude": [
+      "node_modules",
+      "codebase"
+    ]
+  }
+  

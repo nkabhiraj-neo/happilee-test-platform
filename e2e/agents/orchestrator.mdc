@@ -1,0 +1,55 @@
+# Happilee Frontend E2E Orchestrator (3-Agent Pipeline)
+
+## Goal
+Keep `npm run test:e2e` green by chaining:
+**Write → Run → Fix → Re-run failed only → Report**
+
+## Pipeline
+### Step 1 — AGENT 1 (Test Writer)
+**Input**
+- Target pages/components (default: `src/pages/Login.tsx`, `src/pages/Signup.tsx`)
+- Existing E2E assets under `e2e/`
+
+**Output**
+- New/updated `.feature` files and step defs
+- Stable selectors/page objects
+
+**Handoff to AGENT 2**
+- List of tests written/updated
+- Tags/scenario names to run (if any)
+
+### Step 2 — AGENT 2 (Test Runner)
+**Runs**
+- `npm run test:e2e`
+
+**Outputs**
+- `e2e/agents/test_results.json` (authoritative)
+- Optional: HTML report via `npm run test:e2e:report`
+- Optional: Google Sheet `TestRuns` row if logger exists
+
+**Handoff**
+- If failures exist → AGENT 3
+- If no failures → stop
+
+### Step 3 — AGENT 3 (Bug Fixer)
+**Input**
+- `e2e/agents/test_results.json`
+
+**Actions**
+- Fix root cause in `src/**` or `e2e/**`
+- Re-run **only failed** tests
+
+**Outputs**
+- Updated code + updated `test_results.json`
+
+**Stop condition**
+- All failures resolved and re-run is green
+
+## Guardrails
+- Never break `e2e/cucumber.config.ts`
+- Keep:
+  - features in `e2e/features/`
+  - steps in `e2e/steps/`
+  - page objects in `e2e/pages/`
+- Prefer deterministic tests (mock/stub network only when needed for stability)
+
