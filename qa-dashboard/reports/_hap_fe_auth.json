@@ -14,7 +14,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 528437399
+              "duration": 765556399
             }
           },
           {
@@ -27,7 +27,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 3725380598
+              "duration": 4139651199
             }
           },
           {
@@ -40,7 +40,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 550365199
+              "duration": 72714500
             }
           },
           {
@@ -53,7 +53,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 81810100
+              "duration": 78747998
             }
           },
           {
@@ -66,7 +66,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 80610900
+              "duration": 85575999
             }
           },
           {
@@ -79,7 +79,7 @@
             },
             "result": {
               "status": "passed",
-              "duration": 872001700
+              "duration": 498946499
             }
           },
           {
@@ -87,7 +87,7 @@
             "hidden": true,
             "result": {
               "status": "passed",
-              "duration": 571278300
+              "duration": 593608400
             }
           }
         ],
@@ -99,6 +99,619 @@
           {
             "name": "@MLR-201",
             "line": 8
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "auth-login-via-email-(mlr-login-and-otp);login-with-invalid-email-shows-error-and-user-remains-on-login-page",
+        "keyword": "Scenario",
+        "line": 17,
+        "name": "Login with invalid email shows error and user remains on login page",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 250277900
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 18,
+            "name": "I am on the auth login page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:21"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4002169998
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 19,
+            "name": "I click on Login with Email id Option",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:26"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 134623299
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 20,
+            "name": "the user enters \"invalidFormat\"",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 254018799
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 21,
+            "name": "I click Get Otp Button",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 95558300
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 22,
+            "name": "I should see an invalid email error on the login page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:49"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 41335099
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 23,
+            "name": "I should remain on the login page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:53"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 26769799
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 481688500
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@auth",
+            "line": 1
+          },
+          {
+            "name": "@MLR-202",
+            "line": 16
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "auth-login-via-email-(mlr-login-and-otp);otp-entry-with-correct-otp-navigates-to-project-listing-page",
+        "keyword": "Scenario",
+        "line": 26,
+        "name": "OTP entry with correct OTP navigates to project listing page",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 326735300
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 27,
+            "name": "I am on the auth login page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:21"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4013130600
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 28,
+            "name": "I click on Login with Email id Option",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:26"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 286190099
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 29,
+            "name": "the user enters \"validEmail\"",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 81446398
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 30,
+            "name": "I click Get Otp Button",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 597210599
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 31,
+            "name": "I fetch otp from yopmail and enter",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:57"
+            },
+            "result": {
+              "status": "failed",
+              "duration": 60010114100,
+              "error_message": "Error: function timed out, ensure the promise resolves within 60000 milliseconds\n    at Timeout.<anonymous> (C:\\happilee-test-platform\\codebase\\node_modules\\@cucumber\\cucumber\\src\\time.ts:52:14)\n    at listOnTimeout (node:internal/timers:605:17)\n    at processTimers (node:internal/timers:541:7)"
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 32,
+            "name": "I click on Login Button",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:67"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 33,
+            "name": "I verify that it is redirected to the project Page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:71"
+            },
+            "result": {
+              "status": "skipped",
+              "duration": 0
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 5940760800
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@auth",
+            "line": 1
+          },
+          {
+            "name": "@MLR-203",
+            "line": 25
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "auth-login-via-email-(mlr-login-and-otp);otp-entry-with-incorrect-otp-shows-error-and-user-remains-on-otp-page",
+        "keyword": "Scenario",
+        "line": 36,
+        "name": "OTP entry with incorrect OTP shows error and user remains on OTP page",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 288561399
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 37,
+            "name": "I am on the auth login page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:21"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 4235791099
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 38,
+            "name": "I click on Login with Email id Option",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:26"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 121698799
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 39,
+            "name": "the user enters \"validEmail\"",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 123696298
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 40,
+            "name": "I click Get Otp Button",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 688690198
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 41,
+            "name": "I enter OTP \"000000\"",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:63"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 383656100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 42,
+            "name": "I click on Login Button",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:67"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 290472898
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 43,
+            "name": "I should see an OTP validation error message",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:76"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 419433199
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 44,
+            "name": "I should remain on the OTP entry page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:80"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 19169300
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 791244099
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@auth",
+            "line": 1
+          },
+          {
+            "name": "@MLR-204",
+            "line": 35
+          }
+        ],
+        "type": "scenario"
+      },
+      {
+        "description": "",
+        "id": "auth-login-via-email-(mlr-login-and-otp);multiple-valid-email-attempts-each-navigate-to-otp-page",
+        "keyword": "Scenario",
+        "line": 47,
+        "name": "Multiple valid email attempts each navigate to OTP page",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 285741899
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 48,
+            "name": "I am on the auth login page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:21"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3877746998
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 49,
+            "name": "I click on Login with Email id Option",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:26"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 97651200
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 50,
+            "name": "the user enters \"validEmail\"",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 96344799
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 51,
+            "name": "I click Get Otp Button",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 99720400
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 52,
+            "name": "I should be navigated to the OTP entry page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:45"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 624459999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 53,
+            "name": "I return to the auth login page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:84"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3668614600
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 54,
+            "name": "I click on Login with Email id Option",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:26"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 76376999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 55,
+            "name": "the user enters \"validEmail\"",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 139866198
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 56,
+            "name": "I click Get Otp Button",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 83345999
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 57,
+            "name": "I should be navigated to the OTP entry page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:45"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 355323300
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 58,
+            "name": "I return to the auth login page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:84"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3337498499
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 59,
+            "name": "I click on Login with Email id Option",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:26"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 245007298
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 60,
+            "name": "the user enters \"validEmail\"",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 73174299
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 61,
+            "name": "I click Get Otp Button",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 81561699
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 62,
+            "name": "I should be navigated to the OTP entry page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:45"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 242995800
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 877312699
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@auth",
+            "line": 1
+          },
+          {
+            "name": "@MLR-209",
+            "line": 46
           }
         ],
         "type": "scenario"
