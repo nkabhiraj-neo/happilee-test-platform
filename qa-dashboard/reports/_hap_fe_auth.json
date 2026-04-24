@@ -1,0 +1,119 @@
+[
+  {
+    "description": "  As a user of the Happilee web app\n  I want to sign in with email and OTP\n  So that I can reach the project listing after successful authentication",
+    "elements": [
+      {
+        "description": "",
+        "id": "auth-login-via-email-(mlr-login-and-otp);login-with-valid-email-navigates-to-otp-entry-page",
+        "keyword": "Scenario",
+        "line": 9,
+        "name": "Login with valid email navigates to OTP entry page",
+        "steps": [
+          {
+            "keyword": "Before",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 528437399
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Given ",
+            "line": 10,
+            "name": "I am on the auth login page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:21"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 3725380598
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 11,
+            "name": "I click on Login with Email id Option",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:26"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 550365199
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "And ",
+            "line": 12,
+            "name": "the user enters \"validEmail\"",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:30"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 81810100
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "When ",
+            "line": 13,
+            "name": "I click Get Otp Button",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:41"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 80610900
+            }
+          },
+          {
+            "arguments": [],
+            "keyword": "Then ",
+            "line": 14,
+            "name": "I should be navigated to the OTP entry page",
+            "match": {
+              "location": "tests\\bdd\\steps\\login.steps.ts:45"
+            },
+            "result": {
+              "status": "passed",
+              "duration": 872001700
+            }
+          },
+          {
+            "keyword": "After",
+            "hidden": true,
+            "result": {
+              "status": "passed",
+              "duration": 571278300
+            }
+          }
+        ],
+        "tags": [
+          {
+            "name": "@auth",
+            "line": 1
+          },
+          {
+            "name": "@MLR-201",
+            "line": 8
+          }
+        ],
+        "type": "scenario"
+      }
+    ],
+    "id": "auth-login-via-email-(mlr-login-and-otp)",
+    "line": 2,
+    "keyword": "Feature",
+    "name": "Auth Login via email (MLR login and OTP)",
+    "tags": [
+      {
+        "name": "@auth",
+        "line": 1
+      }
+    ],
+    "uri": "tests\\bdd\\features\\login\\auth-login.feature"
+  }
+]

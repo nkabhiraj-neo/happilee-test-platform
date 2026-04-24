@@ -1,0 +1,1193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Happilee QA — Test Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<style>
+:root {
+  --green:#25D366;--green-d:#128C7E;--blue:#1672CC;--navy:#0B3966;--teal:#00C4B4;
+  --pass:#16a34a;--pass-bg:#dcfce7;--pass-ring:#86efac;
+  --fail:#dc2626;--fail-bg:#fee2e2;--fail-ring:#fca5a5;
+  --skip:#d97706;--skip-bg:#fef3c7;--skip-ring:#fcd34d;
+  --font:'Plus Jakarta Sans',sans-serif;--mono:'JetBrains Mono',monospace;
+  --bg:#f0f4f8;--surface:#fff;--surface2:#f8fafc;
+  --border:rgba(0,0,0,0.07);--border2:rgba(0,0,0,0.13);
+  --text:#0f172a;--text2:#475569;--text3:#94a3b8;
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.06),0 2px 8px rgba(0,0,0,0.04);
+  --shadow:0 2px 8px rgba(0,0,0,0.07),0 8px 24px rgba(0,0,0,0.05);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.1),0 24px 64px rgba(0,0,0,0.07);
+  --r:14px;--r-sm:8px;--r-lg:20px;
+}
+[data-theme="dark"]{
+  --bg:#070d1a;--surface:#0f1829;--surface2:#152035;
+  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.11);
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#334155;
+  --shadow-sm:0 1px 2px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.3);
+  --shadow:0 2px 8px rgba(0,0,0,0.4),0 8px 24px rgba(0,0,0,0.3);
+  --shadow-lg:0 8px 32px rgba(0,0,0,0.5),0 24px 64px rgba(0,0,0,0.4);
+  --pass-bg:rgba(22,163,74,0.12);--pass-ring:rgba(22,163,74,0.3);
+  --fail-bg:rgba(220,38,38,0.12);--fail-ring:rgba(220,38,38,0.3);
+  --skip-bg:rgba(217,119,6,0.12);--skip-ring:rgba(217,119,6,0.3);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100vh;transition:background .4s,color .4s;-webkit-font-smoothing:antialiased;}
+
+/* ANIMATIONS */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideDown{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+@keyframes orbFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes scaleIn{from{opacity:0;transform:scale(0.85)}to{opacity:1;transform:scale(1)}}
+@keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+
+.afu{animation:fadeUp .5s cubic-bezier(0.16,1,0.3,1) both;}
+.afu1{animation:fadeUp .5s .07s cubic-bezier(0.16,1,0.3,1) both;}
+.afu2{animation:fadeUp .5s .14s cubic-bezier(0.16,1,0.3,1) both;}
+.afu3{animation:fadeUp .5s .21s cubic-bezier(0.16,1,0.3,1) both;}
+.afu4{animation:fadeUp .5s .28s cubic-bezier(0.16,1,0.3,1) both;}
+.afu5{animation:fadeUp .5s .35s cubic-bezier(0.16,1,0.3,1) both;}
+.asi{animation:scaleIn .5s .3s cubic-bezier(0.34,1.56,0.64,1) both;}
+
+/* MESH */
+.mesh{position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse 80% 60% at 15% 5%,rgba(22,114,204,0.07) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 85%,rgba(37,211,102,0.06) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 60% at 55% 45%,rgba(0,196,180,0.04) 0%,transparent 55%);
+  transition:all .5s;}
+[data-theme="dark"] .mesh{
+  background:radial-gradient(ellipse 80% 60% at 15% 5%,rgba(22,114,204,0.14) 0%,transparent 60%),
+    radial-gradient(ellipse 60% 50% at 85% 85%,rgba(37,211,102,0.09) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 60% at 55% 45%,rgba(0,196,180,0.07) 0%,transparent 55%);}
+
+/* TOP LINE */
+.topline{position:fixed;top:0;left:0;right:0;height:3px;z-index:200;
+  background:linear-gradient(90deg,var(--navy),var(--blue),var(--teal),var(--green),var(--teal),var(--blue),var(--navy));
+  background-size:300% 100%;animation:shimmer 5s linear infinite;}
+
+/* HEADER */
+.hdr{position:sticky;top:3px;z-index:100;height:60px;padding:0 32px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(255,255,255,0.88);backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);transition:background .4s;}
+[data-theme="dark"] .hdr{background:rgba(15,24,41,0.92);}
+
+.logo{display:flex;align-items:center;gap:10px;}
+.lmark{width:34px;height:34px;border-radius:10px;flex-shrink:0;
+  background:linear-gradient(135deg,#25D366,#128C7E);
+  display:flex;align-items:center;justify-content:center;font-size:17px;
+  box-shadow:0 2px 10px rgba(37,211,102,0.35);}
+.lname{font-size:16px;font-weight:800;letter-spacing:-0.4px;}
+.ltag{font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:var(--text3);}
+
+.hactions{display:flex;align-items:center;gap:8px;}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 16px;
+  border-radius:var(--r-sm);border:1px solid var(--border2);
+  background:var(--surface);color:var(--text2);
+  font-family:var(--font);font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .2s;white-space:nowrap;}
+.btn:hover{background:var(--surface2);transform:translateY(-1px);box-shadow:var(--shadow-sm);}
+.btnp{background:linear-gradient(135deg,var(--blue),var(--navy));color:white;border-color:transparent;
+  box-shadow:0 2px 10px rgba(22,114,204,0.3);}
+.btnp:hover{box-shadow:0 4px 18px rgba(22,114,204,0.48);transform:translateY(-1px);}
+.btni{width:36px;height:36px;padding:0;justify-content:center;font-size:16px;}
+.btn:disabled{opacity:0.7;cursor:not-allowed;}
+
+.livepill{display:flex;align-items:center;gap:7px;padding:5px 13px;border-radius:20px;
+  background:var(--surface);border:1px solid var(--border2);
+  font-size:11px;font-weight:600;color:var(--text2);font-family:var(--mono);}
+.ldot{width:7px;height:7px;border-radius:50%;background:var(--pass);
+  box-shadow:0 0 0 2px var(--pass-ring);animation:pulse 2s ease-in-out infinite;}
+
+/* MAIN */
+.main{position:relative;z-index:1;max-width:1320px;margin:0 auto;padding:28px 32px 80px;}
+
+/* HERO GRID */
+.hero{display:grid;grid-template-columns:1fr 210px;gap:18px;margin-bottom:20px;align-items:stretch;}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;}
+
+.mcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:20px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden;
+  transition:transform .2s,box-shadow .2s;cursor:default;}
+.mcard:hover{transform:translateY(-3px);box-shadow:var(--shadow);}
+.mcard::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;border-radius:0 0 var(--r) var(--r);}
+.mcard.mc-tot::after{background:linear-gradient(90deg,var(--blue),var(--teal));}
+.mcard.mc-pas::after{background:var(--pass);}
+.mcard.mc-fai::after{background:var(--fail);}
+.mcard.mc-dur::after{background:var(--skip);}
+
+.mglyph{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;font-size:16px;margin-bottom:12px;}
+.mcard.mc-tot .mglyph{background:rgba(22,114,204,0.1);}
+.mcard.mc-pas .mglyph{background:var(--pass-bg);}
+.mcard.mc-fai .mglyph{background:var(--fail-bg);}
+.mcard.mc-dur .mglyph{background:var(--skip-bg);}
+
+.mlabel{font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin-bottom:6px;}
+.mval{font-size:40px;font-weight:800;letter-spacing:-2px;line-height:1;}
+.mcard.mc-tot .mval{color:var(--blue);}
+.mcard.mc-pas .mval{color:var(--pass);}
+.mcard.mc-fai .mval{color:var(--fail);}
+.mcard.mc-dur .mval{font-size:22px;letter-spacing:-0.5px;color:var(--skip);}
+.msub{font-size:12px;color:var(--text3);margin-top:4px;font-family:var(--mono);}
+
+/* DONUT */
+.donut-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:18px;box-shadow:var(--shadow-sm);
+  display:flex;flex-direction:column;align-items:center;gap:14px;}
+.donut-wrap{position:relative;width:128px;height:128px;}
+.donut-svg{transform:rotate(-90deg);}
+.donut-ctr{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;}
+.dpct{font-size:28px;font-weight:800;letter-spacing:-1px;}
+.dsub{font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;color:var(--text3);}
+.dleg{display:flex;flex-direction:column;gap:7px;width:100%;}
+.dleg-row{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text2);}
+.dlegdot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* PROGRESS STRIP */
+.pstrip{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 20px;margin-bottom:20px;box-shadow:var(--shadow-sm);}
+.pstrip-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;}
+.plabel{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);}
+.prate{font-size:13px;font-weight:700;color:var(--text2);}
+.ptrack{height:8px;background:var(--surface2);border-radius:4px;border:1px solid var(--border);overflow:hidden;display:flex;gap:2px;}
+.pseg{height:100%;transform-origin:left;animation:barGrow .7s cubic-bezier(0.16,1,0.3,1) both;}
+.pseg:nth-child(1){animation-delay:.1s;}
+.pseg:nth-child(2){animation-delay:.2s;}
+.pseg:nth-child(3){animation-delay:.3s;}
+.pseg.ps{background:var(--pass);}
+.pseg.pf{background:var(--fail);}
+.pseg.pk{background:var(--skip);}
+.pseg:first-child{border-radius:4px 0 0 4px;}
+.pseg:last-child{border-radius:0 4px 4px 0;}
+
+/* META ROW */
+.metarow{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:12px 20px;margin-bottom:22px;display:flex;align-items:center;
+  box-shadow:var(--shadow-sm);overflow-x:auto;flex-wrap:wrap;gap:0;}
+.mi{display:flex;align-items:center;gap:8px;padding:4px 20px;
+  border-right:1px solid var(--border);font-size:13px;color:var(--text2);white-space:nowrap;flex-shrink:0;}
+.mi:first-child{padding-left:0;}
+.mi:last-child{border-right:none;}
+.miv{font-weight:600;color:var(--text);}
+
+/* SECTION */
+.secrow{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.sectitle{font-size:17px;font-weight:800;letter-spacing:-0.3px;}
+.fgrp{display:flex;gap:6px;}
+.fchip{padding:6px 14px;border-radius:20px;border:1px solid var(--border2);
+  background:var(--surface);font-family:var(--font);font-size:12px;font-weight:600;
+  color:var(--text2);cursor:pointer;transition:all .15s;}
+.fchip:hover{background:var(--surface2);}
+.fchip.ac{background:var(--navy);color:white;border-color:var(--navy);}
+.fchip.ac.fp{background:var(--pass);border-color:var(--pass);}
+.fchip.ac.ff{background:var(--fail);border-color:var(--fail);}
+.fchip.ac.fk{background:var(--skip);border-color:var(--skip);}
+
+/* FEATURE */
+.fblock{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);
+  margin-bottom:14px;overflow:hidden;box-shadow:var(--shadow-sm);transition:box-shadow .2s;}
+.fblock:hover{box-shadow:var(--shadow);}
+.fbar{padding:14px 20px;display:flex;align-items:center;gap:12px;
+  background:var(--surface2);border-bottom:1px solid var(--border);}
+.ficon{font-size:15px;}
+.fname{font-size:14px;font-weight:700;flex:1;}
+.furi{font-family:var(--mono);font-size:11px;color:var(--text3);
+  background:var(--bg);padding:3px 9px;border-radius:6px;border:1px solid var(--border);}
+.fcnt{font-size:12px;font-weight:600;color:var(--text3);}
+
+/* SCENARIO */
+.swrap{border-bottom:1px solid var(--border);}
+.swrap:last-child{border-bottom:none;}
+.srow{padding:14px 20px;display:flex;align-items:center;gap:12px;
+  cursor:pointer;transition:background .15s;user-select:none;}
+.srow:hover{background:var(--surface2);}
+
+.sbadge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;
+  font-size:11px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;
+  font-family:var(--mono);flex-shrink:0;}
+.sbadge.passed{background:var(--pass-bg);color:var(--pass);}
+.sbadge.failed{background:var(--fail-bg);color:var(--fail);}
+.sbadge.skipped{background:var(--skip-bg);color:var(--skip);}
+.sdot{width:6px;height:6px;border-radius:50%;background:currentColor;}
+
+.sname{flex:1;font-size:13.5px;font-weight:600;}
+.stags{display:flex;gap:5px;flex-wrap:wrap;}
+.tag{padding:3px 8px;border-radius:5px;font-size:11px;font-weight:600;
+  font-family:var(--mono);background:var(--surface2);color:var(--text3);border:1px solid var(--border);}
+.tag.req{background:rgba(22,114,204,0.1);color:var(--blue);border-color:rgba(22,114,204,0.2);}
+.tag.reg{background:rgba(124,58,237,0.1);color:#7c3aed;border-color:rgba(124,58,237,0.2);}
+.tag.smk{background:rgba(37,211,102,0.1);color:var(--green-d);border-color:rgba(37,211,102,0.2);}
+.tag.prj{background:rgba(0,196,180,0.1);color:#0F7A72;border-color:rgba(0,196,180,0.2);}
+
+.sdur{font-family:var(--mono);font-size:12px;color:var(--text3);flex-shrink:0;}
+.chev{font-size:14px;color:var(--text3);transition:transform .25s cubic-bezier(0.34,1.56,0.64,1);flex-shrink:0;}
+.chev.op{transform:rotate(180deg);}
+
+.step-count{display:flex;gap:5px;flex-shrink:0;}
+.sc-p{padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;font-family:var(--mono);
+  background:var(--pass-bg);color:var(--pass);}
+.sc-f{padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;font-family:var(--mono);
+  background:var(--fail-bg);color:var(--fail);}
+.sc-s{padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700;font-family:var(--mono);
+  background:var(--skip-bg);color:var(--skip);}
+
+/* STEPS PANEL */
+.spanel{background:var(--surface2);border-top:1px solid var(--border);
+  padding:0 20px 16px;animation:slideDown .22s cubic-bezier(0.16,1,0.3,1);}
+.sphdr{padding:12px 0 10px;font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);}
+
+.steprow{display:flex;align-items:flex-start;gap:12px;padding:9px 0;border-bottom:1px solid var(--border);animation:fadeUp .15s ease both;}
+.steprow:last-child{border-bottom:none;}
+
+.stepdot{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:2px;}
+.stepdot.passed{background:var(--pass-bg);color:var(--pass);border:1px solid var(--pass-ring);}
+.stepdot.failed{background:var(--fail-bg);color:var(--fail);border:1px solid var(--fail-ring);}
+.stepdot.skipped{background:var(--skip-bg);color:var(--skip);border:1px solid var(--skip-ring);}
+
+.stcont{flex:1;min-width:0;}
+.sttxt{font-size:13px;line-height:1.5;}
+.stkw{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--blue);margin-right:4px;}
+[data-theme="dark"] .stkw{color:var(--teal);}
+.sttime{font-family:var(--mono);font-size:11px;color:var(--text3);flex-shrink:0;padding-top:3px;min-width:52px;text-align:right;}
+
+/* ERROR */
+.errblk{margin-top:10px;border:1px solid var(--fail-ring);border-left:3px solid var(--fail);
+  border-radius:var(--r-sm);background:var(--fail-bg);overflow:hidden;}
+.errhdr{padding:8px 12px;display:flex;align-items:center;gap:7px;border-bottom:1px solid var(--fail-ring);}
+.errtxt{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--fail);}
+.errbody{padding:10px 12px;font-family:var(--mono);font-size:11.5px;color:var(--fail);
+  line-height:1.65;white-space:pre-wrap;word-break:break-all;max-height:220px;overflow-y:auto;
+  background:rgba(220,38,38,0.04);}
+[data-theme="dark"] .errbody{color:#fca5a5;}
+
+/* ATTACH */
+.atxtlbl{font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text3);margin:8px 0 5px;}
+.atxt{background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);
+  padding:10px 12px;font-family:var(--mono);font-size:11.5px;color:var(--text2);
+  line-height:1.6;white-space:pre-wrap;word-break:break-word;}
+
+/* SCREENSHOT */
+.sswrap{margin-top:10px;border-radius:var(--r-sm);overflow:hidden;
+  border:1px solid var(--fail-ring);box-shadow:0 4px 16px rgba(220,38,38,0.15);}
+.sshdr{padding:8px 12px;background:var(--fail-bg);border-bottom:1px solid var(--fail-ring);
+  display:flex;align-items:center;gap:8px;}
+.sshtxt{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--fail);}
+.ssimg{width:100%;display:block;max-height:520px;object-fit:contain;background:#000;}
+
+/* HISTORY */
+.hgrid{display:flex;flex-direction:column;gap:8px;}
+.hitem{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);
+  padding:13px 18px;display:flex;align-items:center;gap:14px;
+  cursor:pointer;transition:all .15s;box-shadow:var(--shadow-sm);}
+.hitem:hover{transform:translateX(4px);box-shadow:var(--shadow);border-color:var(--border2);}
+.hitem.ac{border-color:var(--blue);box-shadow:0 0 0 3px rgba(22,114,204,0.15);}
+.hnum{font-family:var(--mono);font-size:11px;color:var(--text3);min-width:44px;}
+.hdot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.hdot.passed{background:var(--pass);}
+.hdot.failed{background:var(--fail);}
+.hname{flex:1;font-size:13px;font-weight:500;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hpills{display:flex;gap:5px;}
+.hpill{font-size:11px;font-family:var(--mono);font-weight:600;padding:2px 8px;border-radius:5px;}
+.hpill.hp{background:var(--pass-bg);color:var(--pass);}
+.hpill.hf{background:var(--fail-bg);color:var(--fail);}
+.hpill.hk{background:var(--skip-bg);color:var(--skip);}
+.htime{font-size:11px;color:var(--text3);font-family:var(--mono);white-space:nowrap;}
+
+/* DROP */
+.dropzone{margin:48px auto;max-width:600px;border:2px dashed var(--border2);
+  border-radius:24px;padding:64px 40px;text-align:center;cursor:pointer;
+  background:linear-gradient(135deg,var(--surface),var(--surface2));
+  transition:all .3s cubic-bezier(0.16,1,0.3,1);}
+.dropzone:hover,.dropzone.dg{border-color:var(--blue);background:rgba(22,114,204,0.04);transform:scale(1.015);}
+[data-theme="dark"] .dropzone:hover,[data-theme="dark"] .dropzone.dg{border-color:var(--green);background:rgba(37,211,102,0.04);}
+.dorb{width:78px;height:78px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--navy));
+  display:flex;align-items:center;justify-content:center;font-size:34px;
+  margin:0 auto 22px;box-shadow:0 8px 28px rgba(22,114,204,0.32);
+  animation:orbFloat 3.5s ease-in-out infinite;}
+.dtitle{font-size:25px;font-weight:800;letter-spacing:-0.5px;margin-bottom:10px;}
+.ddesc{font-size:15px;color:var(--text2);margin-bottom:26px;line-height:1.6;}
+.ddesc code{font-family:var(--mono);font-size:13px;background:var(--surface2);
+  border:1px solid var(--border2);padding:2px 8px;border-radius:5px;color:var(--blue);}
+.dbtn{display:inline-flex;align-items:center;gap:8px;padding:13px 28px;border-radius:12px;border:none;
+  background:linear-gradient(135deg,var(--blue),var(--navy));color:white;
+  font-family:var(--font);font-size:14px;font-weight:700;cursor:pointer;
+  box-shadow:0 4px 16px rgba(22,114,204,0.4);transition:all .2s;}
+.dbtn:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(22,114,204,0.52);}
+.dhint{margin-top:18px;font-size:12px;color:var(--text3);font-family:var(--mono);}
+
+.evidence-section{margin-top:16px;border-top:2px solid var(--fail-ring);padding-top:14px;}
+.evidence-title{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:1px;
+  color:var(--fail);margin-bottom:12px;}
+
+.video-section{margin-top:16px;padding-top:12px;border-top:1px solid var(--border);}
+
+.mcard.flash{animation:cardFlash 0.6s ease;}
+@keyframes cardFlash{0%,100%{opacity:1}50%{opacity:0.7;box-shadow:0 0 0 4px rgba(22,114,204,0.2);}}
+.notif-banner{padding:12px 20px;margin-bottom:16px;border-radius:var(--r);font-weight:700;display:flex;align-items:center;gap:10px;animation:slideDown .3s ease;}
+.notif-banner.fail{background:var(--fail-bg);border:2px solid var(--fail);color:var(--fail);}
+.notif-banner.pass{background:var(--pass-bg);border:2px solid var(--pass);color:var(--pass);}
+.block-select{padding:6px 12px;border-radius:var(--r-sm);border:1px solid var(--border2);
+  background:var(--surface);color:var(--text2);font-family:var(--font);font-size:13px;
+  font-weight:600;cursor:pointer;min-width:180px;}
+.live-btn{padding:6px 14px;border-radius:var(--r-sm);border:1px solid var(--border2);
+  font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+.live-btn.off{background:var(--surface);color:var(--text2);}
+.live-btn.on{background:var(--pass-bg);color:var(--pass);border-color:var(--pass);}
+
+::-webkit-scrollbar{width:5px;height:5px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px;}
+
+@media(max-width:1000px){.hero{grid-template-columns:1fr;}.metrics{grid-template-columns:repeat(2,1fr);}.main{padding:20px 16px 60px;}.hdr{padding:0 16px;}}
+@media(max-width:600px){.metrics{grid-template-columns:1fr 1fr;}.sttime{display:none;}.sname{font-size:12.5px;}}
+
+/* LIVE MONITOR */
+.live-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  margin-bottom: 20px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+}
+
+.live-panel-header {
+  padding: 14px 20px;
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.live-state-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  font-family: var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.live-state-badge.running {
+  background: rgba(22,114,204,0.12);
+  color: var(--blue);
+}
+.live-state-badge.completed {
+  background: var(--pass-bg);
+  color: var(--pass);
+}
+.live-state-badge.idle {
+  background: var(--surface2);
+  color: var(--text3);
+}
+
+.live-pulse {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--blue);
+  animation: pulse 1s ease-in-out infinite;
+  flex-shrink: 0;
+}
+
+.live-scenario-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.live-body {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  gap: 0;
+}
+
+.live-steps-col {
+  padding: 16px 20px;
+  border-right: 1px solid var(--border);
+}
+
+.live-right-col {
+  padding: 16px 20px;
+}
+
+.live-step-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--r-sm);
+  margin-bottom: 3px;
+  transition: background 0.2s;
+  position: relative;
+  flex-wrap: wrap;
+}
+.live-step-row.running {
+  background: rgba(22,114,204,0.07);
+  border: 1px solid rgba(22,114,204,0.15);
+}
+.live-step-row.passed {
+  background: transparent;
+}
+.live-step-row.failed {
+  background: var(--fail-bg);
+  border: 1px solid var(--fail-ring);
+}
+.live-step-row.pending {
+  opacity: 0.45;
+}
+
+.live-step-icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.live-step-icon.passed {
+  background: var(--pass-bg);
+  color: var(--pass);
+  border: 1px solid var(--pass-ring);
+}
+.live-step-icon.failed {
+  background: var(--fail-bg);
+  color: var(--fail);
+  border: 1px solid var(--fail-ring);
+}
+.live-step-icon.running {
+  background: rgba(22,114,204,0.1);
+  color: var(--blue);
+  border: 1px solid rgba(22,114,204,0.3);
+}
+.live-step-icon.skipped {
+  background: var(--skip-bg);
+  color: var(--skip);
+  border: 1px solid var(--skip-ring);
+}
+.live-step-icon.pending {
+  background: var(--surface2);
+  color: var(--text3);
+  border: 1px solid var(--border);
+}
+
+.live-step-kw {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--blue);
+  flex-shrink: 0;
+  min-width: 44px;
+}
+[data-theme="dark"] .live-step-kw { color: var(--teal); }
+
+.live-step-name {
+  font-size: 12.5px;
+  color: var(--text);
+  flex: 1;
+}
+.live-step-row.running .live-step-name {
+  color: var(--blue);
+  font-weight: 600;
+}
+
+.live-step-dur {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
+.live-running-indicator {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.live-running-indicator span {
+  width: 4px; height: 4px;
+  border-radius: 50%;
+  background: var(--blue);
+  animation: bounce 1.2s ease infinite;
+}
+.live-running-indicator span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.live-running-indicator span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+@keyframes bounce {
+  0%,100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.live-progress-wrap {
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border);
+}
+.live-progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text3);
+  margin-bottom: 6px;
+  font-family: var(--mono);
+}
+.live-progress-track {
+  height: 6px;
+  background: var(--surface2);
+  border-radius: 3px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  display: flex;
+}
+.live-progress-pass {
+  height: 100%;
+  background: var(--pass);
+  transition: width 0.4s ease;
+}
+.live-progress-fail {
+  height: 100%;
+  background: var(--fail);
+  transition: width 0.4s ease;
+}
+
+.live-current-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px;
+  margin-bottom: 14px;
+}
+.live-current-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 8px;
+}
+.live-current-step {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--blue);
+  line-height: 1.5;
+}
+.live-current-elapsed {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 6px;
+}
+
+.live-counters {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 14px;
+}
+.live-counter {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 10px;
+  text-align: center;
+}
+.live-counter-val {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.live-counter-val.p { color: var(--pass); }
+.live-counter-val.f { color: var(--fail); }
+.live-counter-val.s { color: var(--skip); }
+.live-counter-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text3);
+}
+
+.live-idle-state {
+  padding: 40px 20px;
+  text-align: center;
+  color: var(--text3);
+}
+.live-idle-icon {
+  font-size: 40px;
+  margin-bottom: 14px;
+  display: block;
+}
+.live-idle-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text2);
+  margin-bottom: 8px;
+}
+.live-idle-sub {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--text3);
+}
+
+.live-error-box {
+  margin-top: 10px;
+  background: var(--fail-bg);
+  border: 1px solid var(--fail-ring);
+  border-left: 3px solid var(--fail);
+  border-radius: var(--r-sm);
+  padding: 8px 10px;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--fail);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 100px;
+  overflow-y: auto;
+}
+
+@media(max-width:800px) {
+  .live-body { grid-template-columns: 1fr; }
+  .live-steps-col { border-right: none; border-bottom: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const {useState,useEffect,useRef,useCallback,useMemo}=React;
+
+const ns2s=ns=>{if(!ns)return'0.00s';const s=ns/1e9;if(s>=60)return`${Math.floor(s/60)}m ${(s%60).toFixed(1)}s`;return`${s.toFixed(2)}s`;};
+const ns2ms=ns=>{if(!ns)return'0ms';const ms=ns/1e6;return ms>=1000?`${(ms/1000).toFixed(2)}s`:`${ms.toFixed(0)}ms`;};
+const totalNs=fs=>fs.flatMap(f=>f.elements||[]).flatMap(e=>e.steps||[]).reduce((a,s)=>a+(s.result?.duration||0),0);
+const scenSt=el=>{const st=(el.steps||[]).filter(s=>!s.hidden);if(st.some(s=>s.result?.status==='failed'))return'failed';if(st.some(s=>s.result?.status==='skipped'))return'skipped';return'passed';};
+const stats=fs=>{let p=0,f=0,sk=0;(fs||[]).forEach(ft=>(ft.elements||[]).forEach(el=>(el.steps||[]).forEach(step=>{if(step.hidden)return;const s=step.result?.status;if(s==='passed')p++;else if(s==='failed')f++;else if(s==='skipped')sk++;})));return{passed:p,failed:f,skipped:sk,total:p+f+sk};};
+const b64t=s=>{try{return atob(s);}catch{return s;}};
+const fmtD=ts=>new Date(ts).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true});
+const tclass=t=>{const v=t.toLowerCase();if(/@[a-z]+-\d+/.test(v)||/@prj|@mlr/.test(v))return'req';if(v==='@regression')return'reg';if(v==='@smoke')return'smk';if(v.startsWith('@project')||v.startsWith('@auth'))return'prj';return'';};
+
+const BLOCKS=[{id:'_hap_fe_project',label:'_hap_fe_project',url:'./reports/_hap_fe_project.json'},{id:'_hap_fe_auth',label:'_hap_fe_auth',url:'./reports/_hap_fe_auth.json'}];
+const getKey=b=>`hq_runs_${b}_v2`;
+const loadH=block=>{try{return JSON.parse(localStorage.getItem(getKey(block))||'[]');}catch{return[];}};
+const saveR=(block,fs,nm)=>{const h=loadH(block);const e={id:Date.now(),name:nm||'cucumber-report.json',ts:Date.now(),stats:stats(fs),dur:totalNs(fs),features:fs};h.unshift(e);if(h.length>10)h.splice(10);try{localStorage.setItem(getKey(block),JSON.stringify(h));}catch{}return h;};
+
+function Donut({passed,failed,skipped,total}){
+  const R=44,C=276.5;
+  const pPct=total?passed/total:0,fPct=total?failed/total:0,sPct=total?skipped/total:0;
+  const pD=C*pPct,fD=C*fPct,sD=C*sPct;
+  const pct=total?Math.round((passed/total)*100):0;
+  return(
+    <div className="donut-card afu4">
+      <div className="donut-wrap">
+        <svg className="donut-svg" width="128" height="128" viewBox="0 0 100 100">
+          <circle cx="50" cy="50" r={R} fill="none" stroke="var(--surface2)" strokeWidth="10"/>
+          {skipped>0&&<circle cx="50" cy="50" r={R} fill="none" stroke="var(--skip)" strokeWidth="10" strokeDasharray={`${sD} ${C}`} strokeDashoffset={-(pD+fD)} strokeLinecap="round"/>}
+          {failed>0&&<circle cx="50" cy="50" r={R} fill="none" stroke="var(--fail)" strokeWidth="10" strokeDasharray={`${fD} ${C}`} strokeDashoffset={-pD} strokeLinecap="round"/>}
+          {passed>0&&<circle cx="50" cy="50" r={R} fill="none" stroke="var(--pass)" strokeWidth="10" strokeDasharray={`${pD} ${C}`} strokeDashoffset="0" strokeLinecap="round"/>}
+        </svg>
+        <div className="donut-ctr">
+          <div className="dpct asi" style={{color:failed>0?'var(--fail)':'var(--pass)'}}>{pct}%</div>
+          <div className="dsub">pass rate</div>
+        </div>
+      </div>
+      <div className="dleg">
+        {[['var(--pass)','Passed',passed],['var(--fail)','Failed',failed],['var(--skip)','Skipped',skipped]].map(([c,l,v])=>(
+          <div key={l} className="dleg-row"><span className="dlegdot" style={{background:c}}/><span style={{flex:1}}>{l}</span><span style={{fontWeight:700,color:'var(--text)'}}>{v}</span></div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function Step({step,idx}){
+  if(step.hidden)return null;
+  const st=step.result?.status||'skipped';
+  const icon=st==='passed'?'✓':st==='failed'?'✕':'–';
+  const err=step.result?.error_message;
+  const embs=step.embeddings||[];
+  return(
+    <div className="steprow" style={{animationDelay:`${idx*0.03}s`}}>
+      <div className={`stepdot ${st}`}>{icon}</div>
+      <div className="stcont">
+        <div className="sttxt"><span className="stkw">{step.keyword}</span>{step.name}</div>
+        {err&&<div className="errblk"><div className="errhdr"><span>⚠</span><span className="errtxt">Error Details</span></div><pre className="errbody">{err}</pre></div>}
+        {embs.map((emb,i)=>{
+          if(emb.mime_type==='text/plain')return(<div key={i}><div className="atxtlbl">📎 Attachment</div><pre className="atxt">{b64t(emb.data)}</pre></div>);
+          if(emb.mime_type==='image/png')return(<div key={i} className="sswrap"><div className="sshdr"><span style={{fontSize:13}}>📸</span><span className="sshtxt">Failure Screenshot</span></div><img className="ssimg" src={`data:image/png;base64,${emb.data}`} alt="Screenshot"/></div>);
+          return null;
+        })}
+      </div>
+      <div className="sttime">{ns2ms(step.result?.duration)}</div>
+    </div>
+  );
+}
+
+function Scenario({el,autoOpen}){
+  const[open,setOpen]=useState(autoOpen||false);
+  const[videoUrl,setVideoUrl]=useState(null);
+  const[videoType,setVideoType]=useState('video/webm');
+  const videoRef=useRef();
+  const st=scenSt(el);
+  const tags=(el.tags||[]).map(t=>t.name);
+  const visibleSteps=(el.steps||[]).filter(s=>!s.hidden);
+  const steps=visibleSteps;
+  const stepsPassed=visibleSteps.filter(s=>s.result?.status==='passed').length;
+  const stepsFailed=visibleSteps.filter(s=>s.result?.status==='failed').length;
+  const stepsSkipped=visibleSteps.filter(s=>s.result?.status==='skipped').length;
+  const dur=steps.reduce((a,s)=>a+(s.result?.duration||0),0);
+  const allSteps=el.steps||[];
+  const hiddenEmbeddings=allSteps.filter(s=>s.hidden).flatMap(s=>s.embeddings||[]);
+  const failureScreenshot=hiddenEmbeddings.find(e=>e.mime_type==='image/png');
+  const failureText=hiddenEmbeddings.filter(e=>e.mime_type==='text/plain').map(e=>b64t(e.data));
+  const hasFailureEvidence=st==='failed'&&(failureScreenshot||failureText.length>0);
+  const handleVideoAttach=e=>{const file=e.target.files[0];if(!file)return;if(videoUrl)URL.revokeObjectURL(videoUrl);setVideoType(file.type||(file.name.endsWith('.mp4')?'video/mp4':'video/webm'));setVideoUrl(URL.createObjectURL(file));};
+  return(
+    <div className="swrap">
+      <div className="srow" onClick={()=>setOpen(o=>!o)}>
+        <div className={`sbadge ${st}`}><span className="sdot"/>{st}</div>
+        <div className="sname">{el.name}</div>
+        <div className="step-count">
+          <span className="sc-p">✓ {stepsPassed}</span>
+          {stepsFailed>0&&<span className="sc-f">✕ {stepsFailed}</span>}
+          {stepsSkipped>0&&<span className="sc-s">– {stepsSkipped}</span>}
+        </div>
+        <div className="stags">{tags.map(t=><span key={t} className={`tag ${tclass(t)}`}>{t}</span>)}</div>
+        <div className="sdur">{ns2s(dur)}</div>
+        <div className={`chev ${open?'op':''}`}>▾</div>
+      </div>
+      {open&&<div className="spanel">
+        <div className="sphdr">Steps · {steps.length} total</div>
+        {(el.steps||[]).map((s,i)=><Step key={i} step={s} idx={i}/>)}
+        {hasFailureEvidence&&<div className="evidence-section">
+          <div className="evidence-title">📋 Failure Evidence</div>
+          {failureText.map((text,i)=><pre key={i} className="atxt">{text}</pre>)}
+          {failureScreenshot&&<div className="sswrap"><div className="sshdr"><span style={{fontSize:13}}>📸</span><span className="sshtxt">Failure Screenshot</span></div><img className="ssimg" src={`data:image/png;base64,${failureScreenshot.data}`} alt="Failure Screenshot"/></div>}
+        </div>}
+        <div className="video-section">
+          {!videoUrl?(<>
+            <input type="file" accept=".webm,.mp4" style={{display:'none'}} ref={videoRef} onChange={handleVideoAttach}/>
+            <button className="btn" style={{fontSize:12,marginTop:12}} onClick={()=>videoRef.current.click()}>📹 Attach Test Video</button>
+            <span style={{fontSize:11,color:'var(--text3)',marginLeft:8}}>Pick the .webm from artifacts/videos/</span>
+          </>):(<div style={{marginTop:12}}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
+              <span style={{fontSize:12,fontWeight:700,color:'var(--text2)'}}>📹 Test Recording</span>
+              <button className="btn" style={{fontSize:11}} onClick={()=>{URL.revokeObjectURL(videoUrl);setVideoUrl(null);}}>✕ Remove</button>
+            </div>
+            <video controls style={{width:'100%',borderRadius:'var(--r-sm)',border:'1px solid var(--border)',marginTop:4}}>
+              <source src={videoUrl} type={videoType}/>
+              Your browser does not support the video tag.
+            </video>
+          </div>)}
+        </div>
+      </div>}
+    </div>
+  );
+}
+
+function Feature({feature,filter}){
+  const els=(feature.elements||[]).filter(el=>filter==='all'||scenSt(el)===filter);
+  if(!els.length)return null;
+  const uri=(feature.uri||'').replace(/\\/g,'/');
+  return(
+    <div className="fblock afu">
+      <div className="fbar">
+        <span className="ficon">📁</span>
+        <span className="fname">{feature.name}</span>
+        <span className="furi">{uri}</span>
+        <span className="fcnt">{els.length} scenario{els.length>1?'s':''}</span>
+      </div>
+      {els.map((el,i)=><Scenario key={el.id||i} el={el} autoOpen={scenSt(el)==='failed'}/>)}
+    </div>
+  );
+}
+
+function LiveMonitor(){
+  const[data,setData]=React.useState(null);
+  const[elapsed,setElapsed]=React.useState(0);
+  const elapsedRef=React.useRef(null);
+
+  React.useEffect(()=>{
+    const poll=setInterval(async()=>{
+      try{
+        const res=await fetch('../_hap_fe_project/reports/live-status.json?'+Date.now(),{cache:'no-store'});
+        if(!res.ok)return;
+        const json=await res.json();
+        setData(json);
+      }catch{}
+    },500);
+    return()=>clearInterval(poll);
+  },[]);
+
+  React.useEffect(()=>{
+    if(data?.state==='running'){
+      setElapsed(0);
+      elapsedRef.current=setInterval(()=>setElapsed(e=>e+1),1000);
+    }else{
+      if(elapsedRef.current)clearInterval(elapsedRef.current);
+      setElapsed(0);
+    }
+    return()=>{
+      if(elapsedRef.current)clearInterval(elapsedRef.current);
+    };
+  },[data?.state,data?.currentStepIndex]);
+
+  if(!data||data.state==='idle'){
+    return(
+      <div className="live-panel">
+        <div className="live-idle-state">
+          <span className="live-idle-icon">⏸</span>
+          <div className="live-idle-title">Waiting for tests to start</div>
+          <div className="live-idle-sub">Run: npm run test:project</div>
+        </div>
+      </div>
+    );
+  }
+
+  const steps=data.steps||[];
+  const total=steps.length;
+  const done=data.totalPassed+data.totalFailed+data.totalSkipped;
+  const currentStep=steps[data.currentStepIndex];
+  const pPct=total?(data.totalPassed/total)*100:0;
+  const fPct=total?(data.totalFailed/total)*100:0;
+  const stateLabel=data.state==='running'?'Running':'Completed';
+  const featureShort=(data.feature||'').split('/').pop()||data.feature;
+
+  return(
+    <div className="live-panel">
+      <div className="live-panel-header">
+        <div className={`live-state-badge ${data.state}`}>
+          {data.state==='running'&&<span className="live-pulse"/>}
+          {stateLabel}
+        </div>
+        <div className="live-scenario-name">{data.scenario}</div>
+        <span style={{fontSize:11,color:'var(--text3)',fontFamily:'var(--mono)',flexShrink:0}}>{featureShort}</span>
+        <span style={{fontSize:11,color:'var(--text3)',fontFamily:'var(--mono)',flexShrink:0}}>{done}/{total} steps</span>
+      </div>
+      <div className="live-body">
+        <div className="live-steps-col">
+          {steps.map((step,i)=>{
+            const icon=step.status==='passed'?'✓':step.status==='failed'?'✕':step.status==='running'?'▶':step.status==='skipped'?'–':'·';
+            return(
+              <div key={i} className={`live-step-row ${step.status}`}>
+                <div className={`live-step-icon ${step.status}`}>{icon}</div>
+                <span className="live-step-kw">{(step.keyword||'').trim()}</span>
+                <span className="live-step-name">{step.name}</span>
+                {step.duration&&<span className="live-step-dur">{ns2ms(step.duration)}</span>}
+                {step.status==='running'&&<div className="live-running-indicator"><span/><span/><span/></div>}
+                {step.status==='failed'&&step.error&&(
+                  <div className="live-error-box" style={{width:'100%',flexBasis:'100%',marginTop:6}}>{step.error}</div>
+                )}
+              </div>
+            );
+          })}
+          <div className="live-progress-wrap">
+            <div className="live-progress-label">
+              <span>{done} of {total} steps done</span>
+              <span style={{color:data.totalFailed>0?'var(--fail)':data.state==='completed'?'var(--pass)':'var(--text3)'}}>
+                {data.state==='completed'?data.totalFailed>0?'✕ '+data.totalFailed+' failed':'✓ All passed':'running...'}
+              </span>
+            </div>
+            <div className="live-progress-track">
+              <div className="live-progress-pass" style={{width:`${pPct}%`}}/>
+              <div className="live-progress-fail" style={{width:`${fPct}%`}}/>
+            </div>
+          </div>
+        </div>
+        <div className="live-right-col">
+          <div className="live-current-card">
+            <div className="live-current-label">
+              {data.state==='running'?'▶ Running now':data.state==='completed'?'✓ Completed':'Last step'}
+            </div>
+            {currentStep?(
+              <>
+                <div className="live-current-step">
+                  <span style={{fontFamily:'var(--mono)',fontSize:11,color:'var(--blue)',marginRight:6}}>{(currentStep.keyword||'').trim()}</span>
+                  {currentStep.name}
+                </div>
+                {data.state==='running'&&<div className="live-current-elapsed">⏱ {elapsed}s elapsed</div>}
+                {currentStep.duration&&<div className="live-current-elapsed">⏱ {ns2ms(currentStep.duration)}</div>}
+                {currentStep.error&&<pre className="live-error-box">{currentStep.error}</pre>}
+              </>
+            ):(
+              <div style={{fontSize:12,color:'var(--text3)'}}>No step running yet</div>
+            )}
+          </div>
+          <div className="live-counters">
+            <div className="live-counter"><div className="live-counter-val p">{data.totalPassed}</div><div className="live-counter-label">Passed</div></div>
+            <div className="live-counter"><div className="live-counter-val f">{data.totalFailed}</div><div className="live-counter-label">Failed</div></div>
+            <div className="live-counter"><div className="live-counter-val s">{data.totalSkipped}</div><div className="live-counter-label">Skipped</div></div>
+          </div>
+          {data.startedAt&&(
+            <div style={{marginTop:14,padding:'10px 12px',background:'var(--surface2)',border:'1px solid var(--border)',borderRadius:'var(--r-sm)',fontSize:12,color:'var(--text2)',fontFamily:'var(--mono)'}}>
+              ⏱ Run time: {data.completedAt?`${((data.completedAt-data.startedAt)/1000).toFixed(1)}s`:`${Math.floor((Date.now()-data.startedAt)/1000)}s...`}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function HistItem({entry,active,onClick}){
+  const ov=entry.stats.failed>0?'failed':'passed';
+  return(
+    <div className={`hitem ${active?'ac':''}`} onClick={onClick}>
+      <span className="hnum">#{String(entry.id).slice(-4)}</span>
+      <span className={`hdot ${ov}`}/>
+      <span className="hname">{entry.name}</span>
+      <div className="hpills">
+        <span className="hpill hp">✓ {entry.stats.passed}</span>
+        {entry.stats.failed>0&&<span className="hpill hf">✕ {entry.stats.failed}</span>}
+        {entry.stats.skipped>0&&<span className="hpill hk">– {entry.stats.skipped}</span>}
+      </div>
+      <span className="htime">{ns2s(entry.dur)}</span>
+      <span className="htime">{fmtD(entry.ts)}</span>
+    </div>
+  );
+}
+
+function App(){
+  const[theme,setTheme]=useState(()=>localStorage.getItem('hq_theme')||'light');
+  const[selectedBlock,setSelectedBlock]=useState(()=>localStorage.getItem('hq_block')||'_hap_fe_project');
+  const[features,setFeatures]=useState(null);
+  const[fileName,setFileName]=useState(null);
+  const[filter,setFilter]=useState('all');
+  const[drag,setDrag]=useState(false);
+  const[history,setHistory]=useState(()=>loadH(localStorage.getItem('hq_block')||'_hap_fe_project'));
+  const[activeId,setActiveId]=useState(null);
+  const[autoLoadBlocked,setAutoLoadBlocked]=useState(false);
+  const[lastLoadedAt,setLastLoadedAt]=useState(null);
+  const[loading,setLoading]=useState(true);
+  const[liveMode,setLiveMode]=useState(()=>localStorage.getItem('hq_live')==='true');
+  const[countdown,setCountdown]=useState(5);
+  const[notificationBanner,setNotificationBanner]=useState(null);
+  const[flashCards,setFlashCards]=useState(false);
+  const prevStats=useRef(null);
+  const fref=useRef();
+  const blockInfo=BLOCKS.find(b=>b.id===selectedBlock);
+  const reportUrl=blockInfo?.url||'./reports/_hap_fe_project.json';
+
+  const loadFromUrl=useCallback((block)=>{
+    const b=block||selectedBlock;
+    const url=BLOCKS.find(x=>x.id===b)?.url||'./reports/_hap_fe_project.json';
+    setLoading(true);
+    setAutoLoadBlocked(false);
+    fetch(url)
+      .then(res=>{if(!res.ok)throw new Error(res.status);return res.json();})
+      .then(data=>{
+        const fs=Array.isArray(data)?data:(data.features||[]);
+        if(!fs.length){setFeatures(null);setFileName(null);setLoading(false);setNotificationBanner(null);return;}
+        const newSt=stats(fs);
+        const changed=prevStats.current&&(prevStats.current.passed!==newSt.passed||prevStats.current.failed!==newSt.failed||prevStats.current.skipped!==newSt.skipped);
+        if(changed){setFlashCards(true);setTimeout(()=>setFlashCards(false),700);}
+        if(prevStats.current){if(newSt.failed>prevStats.current.failed)setNotificationBanner({type:'fail',msg:`⚠ New failure detected in ${b}`});else if(newSt.failed===0&&prevStats.current.failed>0)setNotificationBanner({type:'pass',msg:'✅ All tests passing!'});else if(!changed)setNotificationBanner(null);}
+        prevStats.current=newSt;
+        const h=saveR(b,fs,`${b}.json`);
+        setHistory(h);
+        setFeatures(fs);
+        setFileName(`${b}.json`);
+        setActiveId(h[0].id);
+        setFilter('all');
+        setLastLoadedAt(Date.now());
+        setLoading(false);
+      })
+      .catch(()=>{setAutoLoadBlocked(true);setLoading(false);setNotificationBanner(null);});
+  },[selectedBlock]);
+
+  useEffect(()=>{document.documentElement.setAttribute('data-theme',theme);localStorage.setItem('hq_theme',theme);},[theme]);
+  useEffect(()=>{localStorage.setItem('hq_block',selectedBlock);setHistory(loadH(selectedBlock));prevStats.current=null;loadFromUrl(selectedBlock);},[selectedBlock]);
+  useEffect(()=>{localStorage.setItem('hq_live',liveMode);},[liveMode]);
+  useEffect(()=>{
+    if(!liveMode)return;
+    const iv=setInterval(()=>{setCountdown(c=>{if(c<=1){loadFromUrl(selectedBlock);return 5;}return c-1;});},1000);
+    return ()=>clearInterval(iv);
+  },[liveMode,selectedBlock,loadFromUrl]);
+
+  const onBlockChange=e=>{const v=e.target.value;if(v){prevStats.current=null;setSelectedBlock(v);setNotificationBanner(null);}};
+
+  const processFile=useCallback(file=>{
+    const r=new FileReader();
+    r.onload=e=>{try{const d=JSON.parse(e.target.result);const fs=Array.isArray(d)?d:(d.features||[]);const h=saveR(selectedBlock,fs,file.name);setHistory(h);setFeatures(fs);setFileName(file.name);setActiveId(h[0].id);setFilter('all');setLastLoadedAt(Date.now());}catch{alert('Invalid JSON. Please upload a valid cucumber-report.json');}};
+    r.readAsText(file);
+  },[selectedBlock]);
+
+  const onDrop=useCallback(e=>{e.preventDefault();setDrag(false);const f=e.dataTransfer.files[0];if(f)processFile(f);},[processFile]);
+
+  const st=useMemo(()=>features?stats(features):null,[features]);
+  const dur=useMemo(()=>features?totalNs(features):0,[features]);
+  const pRate=st?Math.round((st.passed/Math.max(st.total,1))*100):0;
+  const curEntry=history.find(h=>h.id===activeId);
+
+  const totalSteps=features?(features.flatMap(f=>f.elements||[]).flatMap(e=>e.steps||[]).filter(s=>!s.hidden)).length:0;
+
+  return(
+    <div onDragOver={e=>{e.preventDefault();setDrag(true);}} onDragLeave={()=>setDrag(false)} onDrop={onDrop}>
+      <div className="mesh"/>
+      <div className="topline"/>
+
+      <header className="hdr">
+        <div className="logo">
+          <div className="lmark">💬</div>
+          <div><div className="lname">Happilee</div><div className="ltag">QA Dashboard</div></div>
+        </div>
+        <div className="hactions">
+          <select className="block-select" value={selectedBlock} onChange={onBlockChange}>
+            {BLOCKS.map(b=><option key={b.id} value={b.id}>{b.label}</option>)}
+          </select>
+          {features&&<div className="livepill"><span className="ldot"/>{fileName}</div>}
+          {features&&lastLoadedAt&&!liveMode&&<div className="livepill" style={{marginRight:4}}>🕐 Last loaded: {fmtD(lastLoadedAt)}</div>}
+          {features&&liveMode&&<div className="livepill" style={{marginRight:4}}>{loading?'🔄 Tests running...':countdown>1?`Refreshing in ${countdown}s...`:'✓ Up to date'}</div>}
+          {features&&<button className="btn btnp" onClick={()=>loadFromUrl(selectedBlock)} disabled={loading}>🔄 Refresh</button>}
+          <button className={`btn ${liveMode?'btnp':''}`} onClick={()=>{const next=!liveMode;setLiveMode(next);localStorage.setItem('hq_live',String(next));}} title={liveMode?'Live monitor ON':'Live monitor OFF'}>{liveMode?'🟢 Live ON':'⚫ Live OFF'}</button>
+          <button className="btn" onClick={()=>fref.current.click()} title="Upload report (fallback)">⬆ Upload</button>
+          <button className="btn btni" onClick={()=>setTheme(t=>t==='light'?'dark':'light')}>{theme==='light'?'🌙':'☀️'}</button>
+          <input ref={fref} type="file" accept=".json" style={{display:'none'}} onChange={e=>{const f=e.target.files[0];if(f)processFile(f);e.target.value='';}}/>
+        </div>
+      </header>
+
+      <main className="main">
+        {liveMode&&(
+          <div className="afu" style={{marginBottom:20}}>
+            <div className="secrow" style={{marginBottom:12}}>
+              <span className="sectitle">Live Monitor</span>
+              <span style={{fontSize:12,color:'var(--text3)',fontFamily:'var(--mono)'}}>Polling every 500ms · run npm run test:project to start</span>
+            </div>
+            <LiveMonitor/>
+          </div>
+        )}
+        {!features&&(
+          <div className={`dropzone ${drag?'dg':''}`} onClick={()=>!loading&&fref.current.click()}>
+            <div className="dorb">📊</div>
+            {loading?(
+              <div className="dtitle afu">Loading report...</div>
+            ):(<>
+              <div className="dtitle afu">No report found — run your tests first</div>
+              <div className="ddesc afu1">
+                Run tests and copy reports to <code>qa-dashboard/reports/</code><br/>
+                From root: <code>npm run test:project</code> or <code>npm run test:auth</code>
+              </div>
+              {autoLoadBlocked&&(
+                <div className="errblk" style={{margin:'0 auto 20px',maxWidth:480}}>
+                  <div className="errhdr"><span>⚠</span><span className="errtxt">Auto-load blocked by browser</span></div>
+                  <div className="errbody" style={{background:'transparent',color:'inherit',whiteSpace:'normal'}}>
+                    Either open via a local server (<code>cd qa-dashboard && npm run serve</code>) or drag and drop a report below.
+                  </div>
+                  <div style={{padding:'8px 12px',borderTop:'1px solid var(--fail-ring)'}}>
+                    <button className="btn" style={{fontSize:12}} onClick={e=>{e.stopPropagation();loadFromUrl();}}>🔄 Retry fetch</button>
+                  </div>
+                </div>
+              )}
+              <div className="dhint afu2">Or manually upload <code>cucumber-report.json</code></div>
+              <button className="dbtn afu3" onClick={e=>{e.stopPropagation();fref.current.click();}}>⬆ Choose File</button>
+              <div className="dhint afu4">Supports · _hap_fe_auth · _hap_fe_project · any Cucumber.js JSON</div>
+            </>)}
+          </div>
+        )}
+
+        {features&&st&&(<>
+          {notificationBanner&&<div className={`notif-banner ${notificationBanner.type}`}>{notificationBanner.msg}</div>}
+          <div className="hero">
+            <div className="metrics">
+              {[
+                {cls:'mc-tot',g:'📋',l:'Total Steps',v:st.total,s:`${features.length} feature${features.length>1?'s':''}`,a:'afu'},
+                {cls:'mc-pas',g:'✅',l:'Passed Steps',v:st.passed,s:`${pRate}% pass rate`,a:'afu1'},
+                {cls:'mc-fai',g:'❌',l:'Failed Steps',v:st.failed,s:st.failed>0?'needs attention':'all clear',a:'afu2'},
+                {cls:'mc-dur',g:'⏱',l:'Duration',v:ns2s(dur),s:'total run time',a:'afu3'},
+              ].map(({cls,g,l,v,s,a})=>(
+                <div key={cls} className={`mcard ${cls} ${a} ${flashCards?'flash':''}`}>
+                  <div className="mglyph">{g}</div>
+                  <div className="mlabel">{l}</div>
+                  <div className="mval">{v}</div>
+                  <div className="msub">{s}</div>
+                </div>
+              ))}
+            </div>
+            <Donut {...st}/>
+          </div>
+
+          <div className="pstrip afu2">
+            <div className="pstrip-hdr">
+              <span className="plabel">Pass / Fail / Skipped Distribution</span>
+              <span className="prate" style={{color:st.failed>0?'var(--fail)':'var(--pass)'}}>
+                {st.failed>0?`${st.failed} step${st.failed>1?'s':''} need attention`:'✓ All passing'}
+              </span>
+            </div>
+            <div className="ptrack">
+              <div className="pseg ps" style={{width:`${(st.passed/st.total)*100}%`}}/>
+              <div className="pseg pf" style={{width:`${(st.failed/st.total)*100}%`}}/>
+              <div className="pseg pk" style={{width:`${(st.skipped/st.total)*100}%`}}/>
+            </div>
+          </div>
+
+          {curEntry&&(
+            <div className="metarow afu3">
+              {[['📄','File',fileName],['🕐','Run at',fmtD(curEntry.ts)],['📁','Features',features.length],['🏷','Steps',totalSteps]].map(([icon,l,v])=>(
+                <div key={l} className="mi"><span>{icon}</span><span>{l}: <span className="miv">{v}</span></span></div>
+              ))}
+            </div>
+          )}
+
+          <div className="secrow afu4">
+            <span className="sectitle">Test Results</span>
+            <div className="fgrp">
+              {[['all','All',''],['passed','✓ Passed','fp'],['failed','✕ Failed','ff'],['skipped','– Skipped','fk']].map(([v,l,c])=>(
+                <button key={v} className={`fchip ${filter===v?'ac '+c:''}`} onClick={()=>setFilter(v)}>
+                  {l}{v!=='all'?` (${v==='passed'?st.passed:v==='failed'?st.failed:st.skipped})` : ''}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {features.map((f,i)=><Feature key={i} feature={f} filter={filter}/>)}
+
+          {history.length>0&&(
+            <div style={{marginTop:40}} className="afu">
+              <div className="secrow">
+                <span className="sectitle">Run History</span>
+                <button className="btn" style={{fontSize:12}} onClick={()=>{if(window.confirm('Clear all run history?')){localStorage.removeItem(getKey(selectedBlock));setHistory([]);}}}>🗑 Clear</button>
+              </div>
+              <div className="hgrid">
+                {history.map(e=><HistItem key={e.id} entry={e} active={e.id===activeId} onClick={()=>{setFeatures(e.features);setFileName(e.name);setActiveId(e.id);setFilter('all');setLastLoadedAt(e.ts);}}/>)}
+              </div>
+            </div>
+          )}
+        </>)}
+
+        {!features&&history.length>0&&(
+          <div style={{marginTop:32}}>
+            <div className="secrow"><span className="sectitle">Previous Runs</span></div>
+            <div className="hgrid">
+              {history.map(e=><HistItem key={e.id} entry={e} active={false} onClick={()=>{setFeatures(e.features);setFileName(e.name);setActiveId(e.id);setLastLoadedAt(e.ts);}}/>)}
+            </div>
+          </div>
+        )}
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
