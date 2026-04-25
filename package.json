@@ -12,7 +12,8 @@
     "test:e2e:tickets": "cross-env E2E_JIRA_CREATE=1 E2E_GITHUB_CREATE=1 node e2e/scripts/post-e2e-failures.mjs",
     "qa:dashboard": "npx --yes serve e2e/reports -p 4000",
     "sync:jira": "npx ts-node --project tsconfig.scripts.json scripts/sync-jira.ts",
-    "sync:jira:reverse": "npx ts-node --project tsconfig.scripts.json scripts/sync-jira.ts --reverse"
+    "sync:jira:reverse": "npx ts-node --project tsconfig.scripts.json scripts/sync-jira.ts --reverse",
+    "generate-video-index": "node scripts/generate-video-index.mjs"
   },
   "devDependencies": {
     "@cucumber/cucumber": "^11.3.0",
