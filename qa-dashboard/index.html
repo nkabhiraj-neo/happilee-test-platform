@@ -1907,11 +1907,10 @@
           <div className="stcont">
             <div className="sttxt"><span className="stkw">{step.keyword}</span>{step.name}</div>
             {err && <div className="errblk"><div className="errhdr"><span>⚠</span><span className="errtxt">Error Details</span></div><pre className="errbody">{err}</pre></div>}
-            {embs?.length > 0 && embs.map((emb, i) => {
-              if (emb.mime_type === 'text/plain') return (<div key={i}><div className="atxtlbl">📎 Attachment</div><pre className="atxt">{b64t(emb.data)}</pre></div>);
-              if (emb.mime_type.startsWith('image/')) return (
-                <img
-                  key={i}
+            {(step.embeddings || [])
+              .filter(e => e.mime_type?.startsWith('image/'))
+              .map((emb, i) => (
+                <img key={i}
                   src={`data:${emb.mime_type};base64,${emb.data}`}
                   style={{
                     display: 'block',
@@ -1922,12 +1921,14 @@
                     boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
                     cursor: 'pointer'
                   }}
-                  title="Click to open full size"
                   onClick={() => window.open(`data:${emb.mime_type};base64,${emb.data}`)}
+                  alt="step screenshot"
                 />
-              );
-              return null;
-            })}
+              ))
+            }
+            {embs.filter(e => e.mime_type === 'text/plain').map((emb, i) => (
+              <div key={i}><div className="atxtlbl">📎 Attachment</div><pre className="atxt">{b64t(emb.data)}</pre></div>
+            ))}
           </div>
           <div className="sttime">{ns2ms(step.result?.duration)}</div>
         </div>
@@ -1945,11 +1946,22 @@
       const stepsSkipped = visibleSteps.filter(s => s.result?.status === 'skipped').length;
       const dur = steps.reduce((a, s) => a + (s.result?.duration || 0), 0);
 
-      const tag = el.tags?.find(t => t.name.startsWith('@MLR-'))?.name.replace('@', '');
-      const matchedVideo = videoList.find(f =>
-        (tag && f.includes(tag)) ||
-        f.toLowerCase().includes(el.name.toLowerCase().replace(/\s+/g, '-').slice(0, 20))
-      );
+      // Collect all scenario-level screenshots from before/after hooks
+      const scenarioScreenshots = [
+        ...(el.before || []),
+        ...(el.after || [])
+      ].flatMap(hook => hook.embeddings || [])
+        .filter(e => e.mime_type?.startsWith('image/'));
+
+      // Extract the MLR number from scenario tags (STRICT MATCHING)
+      const scenarioTag = (el.tags || [])
+        .map(t => t.name.replace('@', ''))
+        .find(t => t.startsWith('MLR-'));
+
+      // Find video that contains EXACTLY this tag in its filename
+      const matchedVideo = scenarioTag
+        ? (videoList || []).find(f => f.includes(scenarioTag))
+        : null;
 
       return (
         <div className="swrap">
@@ -1968,6 +1980,28 @@
           {open && <div className="spanel">
             <div className="sphdr">Steps · {steps.length} total</div>
             {(el.steps || []).map((s, i) => <Step key={i} step={s} idx={i} />)}
+
+            {scenarioScreenshots.map((emb, i) => (
+              <div key={i} style={{
+                margin: '12px 0', padding: '12px',
+                background: '#fff8f8', borderRadius: '8px',
+                border: '1px solid #fecaca'
+              }}>
+                <div style={{
+                  fontSize: '12px', color: '#dc2626',
+                  marginBottom: '8px', fontWeight: 600
+                }}>
+                  📸 {el.result?.status === 'failed'
+                    ? 'Failure Screenshot' : 'Scenario Screenshot'}
+                </div>
+                <img
+                  src={`data:${emb.mime_type};base64,${emb.data}`}
+                  style={{ maxWidth: '100%', borderRadius: '6px', cursor: 'pointer' }}
+                  onClick={() => window.open(`data:${emb.mime_type};base64,${emb.data}`)}
+                  alt="scenario screenshot"
+                />
+              </div>
+            ))}
 
             {matchedVideo && (
               <div style={{
