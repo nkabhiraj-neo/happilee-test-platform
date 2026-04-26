@@ -12,5 +12,12 @@
     "totalScenarios": 5,
     "passedScenarios": 5,
     "failedScenarios": 0
+  },
+  {
+    "id": 1777220775694,
+    "timestamp": "2026-04-26T16:26:15.763Z",
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "failedScenarios": 0
   }
 ]
