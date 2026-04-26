@@ -2046,6 +2046,147 @@
 
               </div>
             )}
+
+            {/* AI Failure Analysis panel — auto shown when analysis exists */}
+            {el.aiAnalysis && (
+              <div style={{
+                margin: '16px 0',
+                borderRadius: '10px',
+                border: '1px solid #e2e8f0',
+                overflow: 'hidden'
+              }}>
+                {/* Header bar — color based on type */}
+                <div style={{
+                  padding: '10px 16px',
+                  background: el.aiAnalysis.type === 'REAL_BUG' ? '#fef2f2'
+                    : el.aiAnalysis.type === 'ENVIRONMENT_ISSUE' ? '#fffbeb'
+                    : '#eff6ff',
+                  borderBottom: '1px solid #e2e8f0',
+                  display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'
+                }}>
+                  <span style={{fontSize:'16px'}}>🤖</span>
+                  <strong style={{fontSize:'14px'}}>AI Failure Analysis</strong>
+                  <span style={{
+                    padding: '2px 10px', borderRadius: '999px',
+                    fontSize: '11px', fontWeight: 700,
+                    background: el.aiAnalysis.type === 'REAL_BUG' ? '#dc2626'
+                      : el.aiAnalysis.type === 'ENVIRONMENT_ISSUE' ? '#d97706'
+                      : '#2563eb',
+                    color: '#fff'
+                  }}>{el.aiAnalysis.type?.replace(/_/g,' ')}</span>
+                  <span style={{
+                    padding: '2px 10px', borderRadius: '999px',
+                    fontSize: '11px', fontWeight: 600,
+                    background: '#f1f5f9', color: '#475569'
+                  }}>{el.aiAnalysis.severity} severity</span>
+                  <span style={{
+                    padding: '2px 10px', borderRadius: '999px',
+                    fontSize: '11px', background: '#f1f5f9', color: '#475569'
+                  }}>{el.aiAnalysis.confidence} confidence</span>
+                </div>
+
+                {/* Analysis body */}
+                <div style={{padding:'16px', background:'#fff'}}>
+                  <div style={{fontSize:'15px', fontWeight:600, color:'#0f172a', marginBottom:'16px'}}>
+                    {el.aiAnalysis.headline}
+                  </div>
+
+                  {[
+                    { label: '📋 What Happened', text: el.aiAnalysis.what_happened },
+                    { label: '🔍 Root Cause', text: el.aiAnalysis.root_cause },
+                    { label: '📁 Where to Look', text: el.aiAnalysis.where_to_look },
+                    { label: '🔧 How to Fix', text: el.aiAnalysis.how_to_fix },
+                    el.aiAnalysis.code_hint && { label: '💻 Code Hint', text: el.aiAnalysis.code_hint },
+                    { label: '🛡️ Prevention', text: el.aiAnalysis.prevention },
+                  ].filter(Boolean).map((section, i) => (
+                    <div key={i} style={{marginBottom:'12px'}}>
+                      <div style={{
+                        fontSize:'11px', fontWeight:700, color:'#64748b',
+                        textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'4px'
+                      }}>{section.label}</div>
+                      <div style={{
+                        fontSize:'13px', color:'#334155', lineHeight:'1.6',
+                        padding:'8px 12px', background:'#f8fafc',
+                        borderRadius:'6px', borderLeft:'3px solid #e2e8f0',
+                        whiteSpace:'pre-wrap'
+                      }}>{section.text}</div>
+                    </div>
+                  ))}
+
+                  {/* Ticket creation section */}
+                  {el.aiAnalysis.ticket_worthy && (
+                    <div style={{
+                      marginTop:'16px', padding:'12px',
+                      background:'#f0fdf4', borderRadius:'8px', border:'1px solid #bbf7d0'
+                    }}>
+                      <div style={{fontSize:'12px', fontWeight:700, color:'#166534', marginBottom:'8px'}}>
+                        📋 Suggested Ticket
+                      </div>
+                      <div style={{fontSize:'13px', color:'#166534', marginBottom:'10px', fontWeight:500}}>
+                        {el.aiAnalysis.ticket_title}
+                      </div>
+                      <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
+                        <button onClick={() => {
+                          const tag = (el.tags||[]).find(t=>t.name.startsWith('@MLR'))?.name || ''
+                          alert(`To create tickets, run from terminal:\nnode e2e/scripts/post-e2e-failures.mjs\n\nScenario: ${el.name}\nTag: ${tag}`)
+                        }} style={{
+                          padding:'6px 14px', borderRadius:'6px', border:'none',
+                          background:'#0052cc', color:'#fff', fontSize:'12px',
+                          fontWeight:600, cursor:'pointer'
+                        }}>🎫 Create Jira Ticket</button>
+                        <button onClick={() => {
+                          const tag = (el.tags||[]).find(t=>t.name.startsWith('@MLR'))?.name || ''
+                          alert(`To create tickets, run from terminal:\nnode e2e/scripts/post-e2e-failures.mjs\n\nScenario: ${el.name}\nTag: ${tag}`)
+                        }} style={{
+                          padding:'6px 14px', borderRadius:'6px', border:'none',
+                          background:'#24292f', color:'#fff', fontSize:'12px',
+                          fontWeight:600, cursor:'pointer'
+                        }}>🐙 Create GitHub Issue</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Manual re-analyze button */}
+                  <div style={{marginTop:'12px', textAlign:'right'}}>
+                    <button onClick={async (event) => {
+                      const tag = (el.tags||[]).find(t=>t.name.startsWith('@MLR'))?.name?.replace('@','') || ''
+                      const failedSt = (el.steps||[]).find(s=>s.result?.status==='failed')
+                      const shot = (failedSt?.embeddings||[]).find(e=>e.mime_type?.startsWith('image/'))?.data
+                      const btn = event.target
+                      btn.textContent = '⏳ Analyzing...'
+                      btn.disabled = true
+                      try {
+                        const res = await fetch('/.netlify/functions/analyze-failure', {
+                          method:'POST',
+                          headers:{'Content-Type':'application/json'},
+                          body: JSON.stringify({
+                            scenarioName: el.name,
+                            mlrTag: tag,
+                            failedStep: failedSt ? `${failedSt.keyword}${failedSt.name}` : '',
+                            errorMessage: failedSt?.result?.error_message || '',
+                            screenshot: shot || null,
+                            videoAvailable: true,
+                            knownBlockers: ['MLR-203: Yopmail CAPTCHA blocks automated OTP fetch — ENVIRONMENT_ISSUE not a bug']
+                          })
+                        })
+                        const analysis = await res.json()
+                        alert(`🤖 Re-analysis complete!\n\nType: ${analysis.type}\nHeadline: ${analysis.headline}\n\nRefresh the page to see updated analysis if it was saved.`)
+                      } catch(e) {
+                        alert('Analysis failed: ' + e.message)
+                      } finally {
+                        btn.textContent = '🔄 Re-analyze'
+                        btn.disabled = false
+                      }
+                    }} style={{
+                      padding:'5px 12px', borderRadius:'6px',
+                      border:'1px solid #e2e8f0', background:'#fff',
+                      color:'#64748b', fontSize:'11px', cursor:'pointer'
+                    }}>🔄 Re-analyze</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
           </div>}
         </div>
       );
