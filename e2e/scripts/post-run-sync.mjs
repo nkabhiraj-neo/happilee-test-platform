@@ -21,7 +21,7 @@ if (!fs.existsSync(cucumberJsonPath)) {
 
 const cucumberJson = JSON.parse(fs.readFileSync(cucumberJsonPath, 'utf8'));
 const webmFiles = fs.existsSync(videoSrcDir) 
-  ? fs.readdirSync(videoSrcDir).filter(f => f.endsWith('.webm'))
+  ? fs.readdirSync(videoSrcDir).filter(f => f.endsWith('.webm')).sort().reverse()
   : [];
 
 console.log('Found videos:', webmFiles);
