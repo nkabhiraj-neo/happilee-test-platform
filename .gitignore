@@ -1,10 +1,13 @@
-echo node_modules/ > .gitignore
-echo .env >> .gitignore
-echo codebase/ >> .gitignore
-echo e2e/reports/videos/ >> .gitignore
-echo e2e/reports/screenshots/ >> .gitignore
-echo e2e/reports/failures/ >> .gitignore
-echo e2e/reports/analysis/ >> .gitignore
-echo e2e/reports/dashboard.html >> .gitignore
-echo e2e/reports/report.html >> .gitignore
-echo e2e/reports/cucumber.json >> .gitignore
+node_modules/
+.env
+codebase/
+e2e/reports/videos/
+e2e/reports/screenshots/
+e2e/reports/failures/
+e2e/reports/analysis/
+e2e/reports/dashboard.html
+e2e/reports/report.html
+e2e/reports/cucumber.json
+scratch.mjs
+scratch-stitch.mjs
+*.txt
