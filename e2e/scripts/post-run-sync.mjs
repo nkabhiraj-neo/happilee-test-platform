@@ -64,6 +64,36 @@ allScenarios.forEach((scenario, i) => {
   );
 });
 
+// Copy cucumber JSON to dashboard
+fs.copyFileSync(
+  cucumberJsonPath,
+  `qa-dashboard/reports/runs/${RUN_ID}/_hap_fe_auth.json`
+);
+fs.copyFileSync(
+  cucumberJsonPath,
+  'qa-dashboard/reports/_hap_fe_auth.json'
+);
+
+// Append to run-history.json
+const historyPath = 'qa-dashboard/reports/run-history.json';
+let history = [];
+if (fs.existsSync(historyPath)) {
+  history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
+}
+const passedScenarios = allScenarios.filter(s => 
+  (s.steps || []).every(st => st.result?.status === 'passed' || st.hidden)
+).length;
+history.push({
+  id: RUN_ID,
+  timestamp: new Date().toISOString(),
+  totalScenarios: allScenarios.length,
+  passedScenarios: passedScenarios,
+  failedScenarios: allScenarios.length - passedScenarios
+});
+fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
+console.log('✅ Updated run-history.json');
+
+
 // Regenerate index.json
 const allVideos = fs.readdirSync('qa-dashboard/reports/videos')
   .filter(f => f.endsWith('.webm'));
