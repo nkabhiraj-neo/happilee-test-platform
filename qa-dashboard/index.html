@@ -1935,7 +1935,7 @@
       );
     }
 
-    function Scenario({ el, autoOpen, videoList = [] }) {
+    function Scenario({ el, autoOpen, videoIndex = {} }) {
       const [open, setOpen] = useState(autoOpen || false);
       const st = scenSt(el);
       const tags = (el.tags || []).map(t => t.name);
@@ -1958,10 +1958,8 @@
         .map(t => t.name.replace('@', ''))
         .find(t => t.startsWith('MLR-'));
 
-      // Find video that contains EXACTLY this tag in its filename
-      const matchedVideo = scenarioTag
-        ? (videoList || []).find(f => f.includes(scenarioTag))
-        : null;
+      // Find videos for this scenario from the index object
+      const scenarioVideos = scenarioTag ? (videoIndex[scenarioTag] || null) : null;
 
       return (
         <div className="swrap">
@@ -2003,26 +2001,49 @@
               </div>
             ))}
 
-            {matchedVideo && (
-              <div style={{
-                margin: '16px 0',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                border: '1px solid #e2e8f0'
-              }}>
-                <div style={{
-                  padding: '8px 12px',
-                  background: '#f8fafc',
-                  fontSize: '12px',
-                  color: '#64748b',
-                  borderBottom: '1px solid #e2e8f0'
-                }}>
-                  🎬 Test Recording — {matchedVideo}
+            {scenarioVideos && (
+              <div style={{ marginTop: '16px' }}>
+
+                {/* Main app recording */}
+                <div style={{ marginBottom: '12px' }}>
+                  <div style={{
+                    fontSize: '12px', color: '#64748b',
+                    padding: '6px 12px', background: '#f8fafc',
+                    borderRadius: '6px 6px 0 0',
+                    border: '1px solid #e2e8f0', borderBottom: 'none'
+                  }}>
+                    🎬 App Recording
+                  </div>
+                  <video controls style={{
+                    width: '100%', display: 'block', background: '#000',
+                    borderRadius: '0 0 6px 6px', border: '1px solid #e2e8f0'
+                  }}>
+                    <source src={`/reports/videos/${scenarioVideos.app}`} type="video/webm" />
+                    Your browser does not support video playback.
+                  </video>
                 </div>
-                <video controls style={{ width: '100%', display: 'block', background: '#000' }}>
-                  <source src={"/reports/videos/" + matchedVideo} type="video/webm" />
-                  Your browser does not support video playback.
-                </video>
+
+                {/* Yopmail recording — only for scenarios that opened it */}
+                {scenarioVideos.yopmail && (
+                  <div>
+                    <div style={{
+                      fontSize: '12px', color: '#92400e',
+                      padding: '6px 12px', background: '#fefce8',
+                      borderRadius: '6px 6px 0 0',
+                      border: '1px solid #fde68a', borderBottom: 'none'
+                    }}>
+                      📧 Yopmail Recording — OTP fetch flow
+                    </div>
+                    <video controls style={{
+                      width: '100%', display: 'block', background: '#000',
+                      borderRadius: '0 0 6px 6px', border: '1px solid #fde68a'
+                    }}>
+                      <source src={`/reports/videos/${scenarioVideos.yopmail}`} type="video/webm" />
+                      Your browser does not support video playback.
+                    </video>
+                  </div>
+                )}
+
               </div>
             )}
           </div>}
@@ -2030,7 +2051,7 @@
       );
     }
 
-    function Feature({ feature, filter, videoList }) {
+    function Feature({ feature, filter, videoIndex }) {
       const els = (feature.elements || []).filter(el => filter === 'all' || scenSt(el) === filter);
       if (!els.length) return null;
       const uri = (feature.uri || '').replace(/\\/g, '/');
@@ -2042,7 +2063,7 @@
             <span className="furi">{uri}</span>
             <span className="fcnt">{els.length} scenario{els.length > 1 ? 's' : ''}</span>
           </div>
-          {els.map((el, i) => <Scenario key={el.id || i} el={el} autoOpen={scenSt(el) === 'failed'} videoList={videoList} />)}
+          {els.map((el, i) => <Scenario key={el.id || i} el={el} autoOpen={scenSt(el) === 'failed'} videoIndex={videoIndex} />)}
         </div>
       );
     }
@@ -2208,14 +2229,14 @@
       const [countdown, setCountdown] = useState(5);
       const [notificationBanner, setNotificationBanner] = useState(null);
       const [flashCards, setFlashCards] = useState(false);
-      const [videoList, setVideoList] = useState([]);
+      const [videoIndex, setVideoIndex] = useState({});
       const prevStats = useRef(null);
 
       useEffect(() => {
         fetch('/reports/videos/index.json')
           .then(r => r.json())
-          .then(list => setVideoList(list))
-          .catch(() => setVideoList([]));
+          .then(data => setVideoIndex(data))
+          .catch(() => setVideoIndex({}));
       }, []);
       const fref = useRef();
       const blockInfo = BLOCKS.find(b => b.id === selectedBlock);
@@ -2392,7 +2413,7 @@
                 </div>
               </div>
 
-              {features.map((f, i) => <Feature key={i} feature={f} filter={filter} videoList={videoList} />)}
+              {features.map((f, i) => <Feature key={i} feature={f} filter={filter} videoIndex={videoIndex} />)}
 
               {history.length > 0 && (
                 <div style={{ marginTop: 40 }} className="afu">

@@ -19,5 +19,33 @@
     "totalScenarios": 5,
     "passedScenarios": 5,
     "failedScenarios": 0
+  },
+  {
+    "id": 1777222583839,
+    "timestamp": "2026-04-26T16:56:24.054Z",
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "failedScenarios": 0
+  },
+  {
+    "id": 1777222621487,
+    "timestamp": "2026-04-26T16:57:01.561Z",
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "failedScenarios": 0
+  },
+  {
+    "id": 1777222820924,
+    "timestamp": "2026-04-26T17:00:20.997Z",
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "failedScenarios": 0
+  },
+  {
+    "id": 1777222874029,
+    "timestamp": "2026-04-26T17:01:14.101Z",
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "failedScenarios": 0
   }
 ]
