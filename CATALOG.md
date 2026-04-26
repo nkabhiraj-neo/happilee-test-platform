@@ -149,12 +149,15 @@ Both ticket bodies include failure context, and full run video path where availa
 
 ---
 
-## 11) Current known failure signal (latest runs)
+## 11) Current test suite status — _hap_fe_auth (April 26, 2026)
 
-Recent BUG-10 run fails at login with explicit UI validation message:
-- `Login failed — UI showed: "Must be 8+ chars with a letter, number, and symbol". Check E2E_TEST_PASSWORD in .env`
-
-This confirms the improved error-capture logic is working and fail-fast behavior prevents downstream step execution.
+| MLR Tag | Scenario | Status | Last Run | Notes |
+|---------|----------|--------|----------|-----------|
+| MLR-201 | Login valid email → OTP page | ✅ PASSING | Apr 26, 2026 | Stable |
+| MLR-202 | Login invalid email → error | ✅ PASSING | Apr 26, 2026 | Stable |
+| MLR-203 | OTP via Yopmail → project page | ⚠️ INTERMITTENT | Apr 26, 2026 — PASSED | Passes when no CAPTCHA appears on Yopmail. Fails when CAPTCHA blocks OTP fetch. App Recording + Yopmail Recording both captured ✅. When it fails, Yopmail Recording shows the CAPTCHA blocking the OTP fetch. When it passes, it shows the full OTP email and code. |
+| MLR-204 | Wrong OTP → error | ✅ PASSING | Apr 26, 2026 | Stable |
+| MLR-209 | Multiple email attempts | ✅ PASSING | Apr 26, 2026 | Stable |
 
 ---
 

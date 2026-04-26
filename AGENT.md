@@ -82,8 +82,28 @@ Never guess selectors. Always read from knowledge file or codebase first.
 
 ## Step 3 — Run the test
 Run: npm run test:e2e:qa
+This command runs the full _hap_fe_auth BDD suite (MLR-201 to MLR-209) and then runs post-run-sync.mjs to push results to the dashboard.
 Watch the terminal output carefully.
 Do not stop watching until the run completes.
+
+## Current test status (as of April 26, 2026)
+
+| Scenario | Tag     | Status       | Notes                                                                                         |
+|----------|---------|--------------|-----------------------------------------------------------------------------------------------|
+| Login valid email → OTP page | MLR-201 | ✅ PASSING | Stable |
+| Login invalid email → error | MLR-202 | ✅ PASSING | Stable |
+| OTP fetch via Yopmail → login | MLR-203 | ⚠️ INTERMITTENT | Sometimes fails due to Yopmail CAPTCHA (environment blocker). When it passes, full OTP flow is captured in the Yopmail Recording video. |
+| Wrong OTP → error | MLR-204 | ✅ PASSING | Stable |
+| Multiple email attempts | MLR-209 | ✅ PASSING | Stable |
+
+## Video artifacts
+Each scenario gets one App Recording video.
+MLR-203 additionally gets a Yopmail Recording video showing the OTP fetch flow in the Yopmail tab.
+
+- 🎬 App Recording — always present for every scenario
+- 📧 Yopmail Recording — ONLY for MLR-203 (or any future scenario that opens a new browser tab)
+
+Videos are matched to scenarios by mtime in post-run-sync.mjs and displayed in the dashboard at qadash.netlify.app.
 
 ## Step 4 — Analyze terminal output
 After test run, always run ai-analyze-failure.mjs before creating tickets.
@@ -141,3 +161,27 @@ Read from .env only. Never hardcode.
 - Always update knowledge/flows/login.md with new observations
 - Always clean reports before each run
 - Always show dashboard after run
+- Never modify files inside codebase/ without asking the user first and explaining why
+
+## WHAT TO BUILD NEXT
+
+### 🔲 Feature 4: AI Failure Analysis
+- When a scenario fails, an "🤖 Analyze" button should appear in the dashboard
+- Clicking it calls `netlify/functions/analyze-failure.js`
+- That function sends the failed step, error message, and screenshot to Claude (Anthropic)
+- Claude returns a plain-English explanation of what went wrong and suggested fixes
+- Response is shown inline in the dashboard under the failed step
+- Trigger: only on failure (not on pass)
+
+### 🔲 Feature 5: Ticket Automation
+- After AI analysis, offer "Create Jira ticket" and "Create GitHub issue" buttons
+- Use `e2e/scripts/post-e2e-failures.mjs` as the backend
+- Only ask once per failure — do not auto-create
+- Include: failed step, error, screenshot link, AI analysis summary
+
+### 🔲 Feature 6: Smart Selective Testing (CATALOG.md)
+- Read CATALOG.md to understand which scenarios are stable vs intermittent
+- Skip stable scenarios that have not changed since last run
+- Only re-run scenarios tagged INTERMITTENT or NEW
+- This reduces run time significantly in CI
+
