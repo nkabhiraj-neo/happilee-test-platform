@@ -165,23 +165,38 @@ Read from .env only. Never hardcode.
 
 ## WHAT TO BUILD NEXT
 
-### 🔲 Feature 4: AI Failure Analysis
-- When a scenario fails, an "🤖 Analyze" button should appear in the dashboard
-- Clicking it calls `netlify/functions/analyze-failure.js`
-- That function sends the failed step, error message, and screenshot to Claude (Anthropic)
-- Claude returns a plain-English explanation of what went wrong and suggested fixes
-- Response is shown inline in the dashboard under the failed step
-- Trigger: only on failure (not on pass)
+### ✅ Feature 4: AI Failure Analysis — DONE
+- `post-run-sync.mjs` auto-analyzes failures after every sync
+- Prints full structured analysis in terminal (type, severity, headline, root cause, fix, prevention)
+- Asks interactively: "Create tickets? (yes/no)" — yes runs post-e2e-failures.mjs
+- AI panel auto-shown in dashboard on any failed scenario (reads from `el.aiAnalysis`)
+- Re-analyze button available in dashboard (calls `/.netlify/functions/analyze-failure`)
+- `netlify/functions/analyze-failure.js` created and deployed
+- ⚠️ PENDING: Add ANTHROPIC_API_KEY to Netlify env vars (manual step — see ONE-TIME SETUP below)
 
-### 🔲 Feature 5: Ticket Automation
-- After AI analysis, offer "Create Jira ticket" and "Create GitHub issue" buttons
-- Use `e2e/scripts/post-e2e-failures.mjs` as the backend
-- Only ask once per failure — do not auto-create
-- Include: failed step, error, screenshot link, AI analysis summary
+### ✅ Feature 5: Ticket Creation — PARTIALLY DONE
+- Terminal asks yes/no after AI analysis prints
+- `yes` → runs `post-e2e-failures.mjs` → creates Jira + GitHub tickets automatically
+- Dashboard shows 🎫 Jira and 🐙 GitHub buttons (displays terminal command to run)
+- 🔲 PENDING: Wire actual ticket links back into dashboard after creation
 
-### 🔲 Feature 6: Smart Selective Testing (CATALOG.md)
+### 🔲 Feature 6: Smart Selective Testing — NOT YET BUILT
 - Read CATALOG.md to understand which scenarios are stable vs intermittent
 - Skip stable scenarios that have not changed since last run
 - Only re-run scenarios tagged INTERMITTENT or NEW
 - This reduces run time significantly in CI
 
+---
+
+## ONE-TIME SETUP REQUIRED
+
+Add ANTHROPIC_API_KEY to Netlify so the dashboard Re-analyze button works:
+
+  app.netlify.com → qadash → Site configuration →
+  Environment variables → Add variable:
+    Key:   ANTHROPIC_API_KEY
+    Value: (copy from local .env file)
+
+Without this:
+- Terminal auto-analysis still works (reads local .env directly)
+- Dashboard Re-analyze button will return 500 error

@@ -176,3 +176,34 @@ Both ticket bodies include failure context, and full run video path where availa
 ## 13) Practical end-to-end summary
 
 Clone/setup -> run QA script -> auto-clean old artifacts -> execute tests with fail-fast -> capture real failure evidence -> run Claude analysis -> generate static dashboard/report -> optionally create Jira/GitHub tickets -> review at `localhost:4000/dashboard`.
+
+---
+
+## 14) AI Analysis System (as of April 26, 2026)
+
+Auto-triggers in `post-run-sync.mjs` when any scenario fails.
+Uses Claude (`claude-sonnet-4-20250514`) via Anthropic API.
+
+### How it works
+1. `post-run-sync.mjs` reads `qa-dashboard/reports/_hap_fe_auth.json` after sync
+2. For each failed scenario: sends scenario name, MLR tag, failed step, error message, screenshot (base64) to Claude
+3. Claude returns structured JSON: `type`, `confidence`, `severity`, `headline`, `what_happened`, `root_cause`, `where_to_look`, `how_to_fix`, `code_hint`, `prevention`, `ticket_worthy`, `ticket_title`, `ticket_body`
+4. Analysis injected into `_hap_fe_auth.json` as `scenario.aiAnalysis`
+5. Terminal prints full analysis
+6. Asks: "Create Jira + GitHub tickets? (yes/no)"
+7. Dashboard reads `el.aiAnalysis` and renders the AI panel automatically
+
+### Known analysis results
+- MLR-203 CAPTCHA failure → **ENVIRONMENT_ISSUE** (HIGH confidence)
+  - Not a real app bug
+  - Root cause: Yopmail bot-detection CAPTCHA blocks automated OTP fetch
+  - Fix: Replace Yopmail with Mailosaur API for deterministic OTP delivery in CI
+  - ticket_worthy: false (environment issue, not a bug)
+
+### Files
+- `netlify/functions/analyze-failure.js` — Netlify function for dashboard Re-analyze button
+- `e2e/scripts/post-run-sync.mjs` — auto-analysis after every sync run
+
+### Setup required
+- Local `.env` must have `ANTHROPIC_API_KEY` for terminal auto-analysis
+- Netlify env vars must have `ANTHROPIC_API_KEY` for dashboard Re-analyze button
