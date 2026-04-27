@@ -197,3 +197,60 @@ To update:
 3. Wait 1-2 minutes for GitHub Pages to deploy.
 
 Dashboard URL: https://nkabhiraj-neo.github.io/happilee-test-platform/
+
+---
+
+## PERMANENT PLATFORM RULES — NEVER REPEAT THESE FIXES
+
+### GitHub Pages
+- Always add `docs/.nojekyll` file when using GitHub Pages.
+- Files starting with `_` are ignored by Jekyll without `.nojekyll`.
+- This must exist in every deployment: `docs/.nojekyll`.
+
+### Video Recording
+- Each scenario gets its own video (one BrowserContext per scenario).
+- Yopmail opens as a new tab → creates a second `page@*.webm` file.
+- The `page@*.webm` is the Yopmail tab recording.
+- Match it to the scenario by mtime window between scenarios.
+- CAPTCHA appears randomly — video captures whatever happened:
+  → If passed: video shows Yopmail inbox + OTP email
+  → If failed: video shows CAPTCHA blocking page
+  Both are correct — do not try to fix this.
+
+### Screenshots
+- `AfterStep` hook captures every step's screenshot via `this.attach()`.
+- `After` hook captures ALL pages in context (main + Yopmail tab).
+- This must be in `hooks.ts` for EVERY new microfrontend added.
+- Do not add screenshot logic anywhere else.
+
+### AI Analysis
+- Runs automatically in `post-run-sync.mjs` for ALL failed scenarios.
+- Generic — scans all `docs/reports/*.json` files.
+- Injects `aiAnalysis` into scenario JSON.
+- Dashboard reads it automatically — no extra wiring needed.
+- Model: `claude-sonnet-4-5` (required by this environment).
+
+### New Microfrontend Checklist
+When adding any new `_hap_fe_*` module, always do ALL of these:
+  1. Check `hooks.ts` has `AfterStep` screenshot capture.
+  2. Check `hooks.ts` has `After` hook multi-page screenshot capture.
+  3. Check `hooks.ts` saves video with MLR tag rename (not delete).
+  4. Check `playwrightContext.ts` has `recordVideo` configured.
+  5. Add module to `BLOCKS` array in `docs/index.html`.
+  6. Add module JSON path to `post-run-sync.mjs` scan list.
+  7. Run `post-run-sync.mjs` once to generate initial reports.
+  8. Verify `docs/.nojekyll` exists.
+  9. Add scenarios to `CATALOG.md`.
+
+### Post-Run Sync
+- Always run: `node e2e/scripts/post-run-sync.mjs`.
+- Never manually copy files.
+- Script handles: screenshots, videos, AI analysis, run history.
+- Auto-commits and pushes to GitHub → GitHub Pages auto-deploys.
+
+### Ticket Creation
+- ALWAYS ask in chat before creating tickets.
+- Never auto-create tickets.
+- One ticket per root cause, not one per scenario.
+- Environment issues (Yopmail CAPTCHA) → no ticket needed.
+
