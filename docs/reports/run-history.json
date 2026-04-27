@@ -173,5 +173,12 @@
     "totalScenarios": 12,
     "passedScenarios": 5,
     "failedScenarios": 7
+  },
+  {
+    "id": 1777281846534,
+    "timestamp": "2026-04-27T09:24:06.813Z",
+    "totalScenarios": 6,
+    "passedScenarios": 5,
+    "failedScenarios": 1
   }
 ]

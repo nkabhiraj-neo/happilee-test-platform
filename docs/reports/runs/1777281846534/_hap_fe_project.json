@@ -1,0 +1,154 @@
+{
+  "_meta": {
+    "generatedAt": "2026-04-27T09:24:06.809Z",
+    "runId": 1777281846534,
+    "version": 1777281846534,
+    "module": "project"
+  },
+  "features": [
+    {
+      "description": "",
+      "elements": [
+        {
+          "description": "",
+          "id": "project-listing-and-project-creation-flows;successful-login-navigation",
+          "keyword": "Scenario",
+          "line": 5,
+          "name": "Successful login navigation",
+          "steps": [
+            {
+              "keyword": "Before",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 380863899
+              }
+            },
+            {
+              "arguments": [],
+              "keyword": "Given ",
+              "line": 6,
+              "name": "I am on the auth login page",
+              "match": {
+                "location": "..\\_hap_fe_auth\\tests\\bdd\\steps\\login.steps.ts:21"
+              },
+              "result": {
+                "status": "failed",
+                "duration": 3207449798,
+                "error_message": "locator.waitFor: Target page, context or browser has been closed\nCall log:\n\u001b[2m  - waiting for getByTestId('login_card') to be visible\u001b[22m\n\n    at expectLoginCardVisible (C:\\happilee-test-platform\\codebase\\_hap_fe_auth\\tests\\bdd\\support\\uiUtils.ts:135:19)\n    at AppWorld.<anonymous> (C:\\happilee-test-platform\\codebase\\_hap_fe_auth\\tests\\bdd\\steps\\login.steps.ts:23:31)"
+              }
+            },
+            {
+              "arguments": [],
+              "keyword": "And ",
+              "line": 7,
+              "name": "I click on Login with Email id Option",
+              "match": {
+                "location": "..\\_hap_fe_auth\\tests\\bdd\\steps\\login.steps.ts:26"
+              },
+              "result": {
+                "status": "skipped",
+                "duration": 0
+              }
+            },
+            {
+              "arguments": [],
+              "keyword": "And ",
+              "line": 8,
+              "name": "the user enters \"validEmail\"",
+              "match": {
+                "location": "..\\_hap_fe_auth\\tests\\bdd\\steps\\login.steps.ts:30"
+              },
+              "result": {
+                "status": "skipped",
+                "duration": 0
+              }
+            },
+            {
+              "arguments": [],
+              "keyword": "And ",
+              "line": 9,
+              "name": "I click Get Otp Button",
+              "match": {
+                "location": "..\\_hap_fe_auth\\tests\\bdd\\steps\\login.steps.ts:41"
+              },
+              "result": {
+                "status": "skipped",
+                "duration": 0
+              }
+            },
+            {
+              "arguments": [],
+              "keyword": "When ",
+              "line": 10,
+              "name": "I fetch otp from yopmail and enter",
+              "match": {
+                "location": "..\\_hap_fe_auth\\tests\\bdd\\steps\\login.steps.ts:57"
+              },
+              "result": {
+                "status": "skipped",
+                "duration": 0
+              }
+            },
+            {
+              "arguments": [],
+              "keyword": "And ",
+              "line": 11,
+              "name": "I click on Login Button",
+              "match": {
+                "location": "..\\_hap_fe_auth\\tests\\bdd\\steps\\login.steps.ts:70"
+              },
+              "result": {
+                "status": "skipped",
+                "duration": 0
+              }
+            },
+            {
+              "arguments": [],
+              "keyword": "Then ",
+              "line": 12,
+              "name": "I should be navigated to the project listing page",
+              "match": {
+                "location": "tests\\bdd\\steps\\project.steps.ts:15"
+              },
+              "result": {
+                "status": "skipped",
+                "duration": 0
+              }
+            },
+            {
+              "keyword": "After",
+              "hidden": true,
+              "result": {
+                "status": "passed",
+                "duration": 185706799
+              }
+            }
+          ],
+          "tags": [
+            {
+              "name": "@project",
+              "line": 1
+            },
+            {
+              "name": "@MLR-901",
+              "line": 4
+            }
+          ],
+          "type": "scenario"
+        }
+      ],
+      "id": "project-listing-and-project-creation-flows",
+      "line": 2,
+      "keyword": "Feature",
+      "name": "Project listing and project creation flows",
+      "tags": [
+        {
+          "name": "@project",
+          "line": 1
+        }
+      ],
+      "uri": "tests\\bdd\\features\\project\\project-listing-and-creation.feature"
+    }
+  ]
+}
