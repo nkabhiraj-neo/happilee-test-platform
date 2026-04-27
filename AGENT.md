@@ -260,3 +260,11 @@ When adding any new `_hap_fe_*` module, always do ALL of these:
 - `post-run-sync.mjs` always pushes fresh data with `_meta` timestamp.
 - Never rely on browser cache for report data.
 
+### WHEN ASKED TO TEST SOMETHING
+Full test flow (always in this order):
+1. Clear artifacts (videos, screenshots, cucumber JSON)
+2. Run tests fresh
+3. Run `post-run-sync.mjs`
+4. Report results in chat with AI analysis
+5. Ask about tickets
+
