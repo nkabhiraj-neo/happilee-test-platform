@@ -138,7 +138,7 @@ After every run (pass or fail):
 - Screenshots for each major step
 - Video link if recorded
 - Ticket links if created
-- Dashboard is always at https://nkabhiraj-neo.github.io/happilee-test-platform/ — served from qa-dashboard/index.html. Never generate a different dashboard.
+- Dashboard is always at https://nkabhiraj-neo.github.io/happilee-test-platform/ — served from docs/index.html. Never generate a different dashboard.
 
 ## What to test: Auth flow
 Feature: Login to dashboard
@@ -189,7 +189,7 @@ Read from .env only. Never hardcode.
 
 ## GitHub Pages Deployment
 
-The dashboard is deployed to GitHub Pages from the `qa-dashboard` folder of the `main` branch.
+The dashboard is deployed to GitHub Pages from the `docs` folder of the `main` branch.
 
 To update:
 1. Run tests

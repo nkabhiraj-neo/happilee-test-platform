@@ -4,11 +4,12 @@ import readline from 'readline';
 import { execSync } from 'child_process';
 
 const RUN_ID = Date.now();
-const videoSrcDir = 'codebase/_hap_fe_auth/artifacts/videos';
-const cucumberJsonPath = 'codebase/_hap_fe_auth/artifacts/cucumber/cucumber.json';
+const modules = [
+  { name: 'auth', dir: 'codebase/_hap_fe_auth' },
+  { name: 'project', dir: 'codebase/_hap_fe_project' }
+];
 
-// Clean up old videos from flat dir
-const videosDir = 'qa-dashboard/reports/videos';
+const videosDir = 'docs/reports/videos';
 if (fs.existsSync(videosDir)) {
   fs.readdirSync(videosDir)
     .filter(f => f.endsWith('.webm'))
@@ -16,153 +17,128 @@ if (fs.existsSync(videosDir)) {
 }
 console.log('🧹 Cleared old videos');
 
-if (!fs.existsSync(cucumberJsonPath)) {
-  console.error('❌ Cucumber JSON not found!');
-  process.exit(1);
-}
+let totalScenarios = 0;
+let totalPassed = 0;
 
-const cucumberJson = JSON.parse(fs.readFileSync(cucumberJsonPath, 'utf8'));
-const allScenarios = cucumberJson.flatMap(f => f.elements || []);
+for (const module of modules) {
+  const videoSrcDir = path.join(module.dir, 'artifacts/videos');
+  const cucumberJsonPath = path.join(module.dir, 'artifacts/cucumber/cucumber.json');
 
-// ── Build sorted list of all .webm files with mtime ──────────────────────────
-const allFiles = fs.existsSync(videoSrcDir)
-  ? fs.readdirSync(videoSrcDir)
-      .filter(f => f.endsWith('.webm'))
-      .map(f => ({
-        name: f,
-        path: path.join(videoSrcDir, f),
-        mtime: fs.statSync(path.join(videoSrcDir, f)).mtime.getTime(),
-        isHash: f.startsWith('page@')
-      }))
-      .sort((a, b) => a.mtime - b.mtime)
-  : [];
-
-const hashVideos = allFiles.filter(f => f.isHash);
-const namedVideos = allFiles.filter(f => !f.isHash);
-
-console.log(`Found ${namedVideos.length} named videos, ${hashVideos.length} hash (tab) videos`);
-
-// ── Only consider the LATEST named video per MLR tag ─────────────────────────
-// Group named videos by MLR tag, take the most recent one for each
-const latestByTag = {};
-namedVideos.forEach(vid => {
-  const mlrMatch = vid.name.match(/MLR-(\d+)/);
-  if (!mlrMatch) return;
-  const mlrTag = `MLR-${mlrMatch[1]}`;
-  if (!latestByTag[mlrTag] || vid.mtime > latestByTag[mlrTag].mtime) {
-    latestByTag[mlrTag] = vid;
+  if (!fs.existsSync(cucumberJsonPath)) {
+    console.log(`⚠️  Cucumber JSON for ${module.name} not found, skipping...`);
+    continue;
   }
-});
 
-// Sort by mtime so we can compute next-video windows correctly
-const latestNamedVideos = Object.values(latestByTag).sort((a, b) => a.mtime - b.mtime);
+  const cucumberJson = JSON.parse(fs.readFileSync(cucumberJsonPath, 'utf8'));
+  const scenarios = cucumberJson.flatMap(f => f.elements || []);
+  totalScenarios += scenarios.length;
+  totalPassed += scenarios.filter(s =>
+    (s.steps || []).every(st => st.result?.status === 'passed' || st.hidden)
+  ).length;
 
-console.log('Latest named videos per tag:');
-latestNamedVideos.forEach(v => console.log(`  ${v.name} @ ${new Date(v.mtime).toISOString()}`));
+  const allFiles = fs.existsSync(videoSrcDir)
+    ? fs.readdirSync(videoSrcDir)
+        .filter(f => f.endsWith('.webm'))
+        .map(f => ({
+          name: f,
+          path: path.join(videoSrcDir, f),
+          mtime: fs.statSync(path.join(videoSrcDir, f)).mtime.getTime(),
+          isHash: f.startsWith('page@')
+        }))
+        .sort((a, b) => a.mtime - b.mtime)
+    : [];
 
-// ── Assign each hash video to the named video that comes immediately AFTER it ─
-// A Yopmail tab opens DURING a scenario, so its mtime is BEFORE the scenario ends.
-// The first named video whose mtime is GREATER than the hash video's mtime
-// is the scenario that opened it.
+  const hashVideos = allFiles.filter(f => f.isHash);
+  const namedVideos = allFiles.filter(f => !f.isHash);
 
-const videoIndex = {};
+  const latestByTag = {};
+  namedVideos.forEach(vid => {
+    const mlrMatch = vid.name.match(/MLR-(\d+)/);
+    if (!mlrMatch) return;
+    const mlrTag = `MLR-${mlrMatch[1]}`;
+    if (!latestByTag[mlrTag] || vid.mtime > latestByTag[mlrTag].mtime) {
+      latestByTag[mlrTag] = vid;
+    }
+  });
 
-// Pre-populate all tags with null yopmail
-latestNamedVideos.forEach(vid => {
-  const mlrMatch = vid.name.match(/MLR-(\d+)/);
-  if (!mlrMatch) return;
-  videoIndex[`MLR-${mlrMatch[1]}`] = { app: null, yopmail: null };
-});
+  const latestNamedVideos = Object.values(latestByTag).sort((a, b) => a.mtime - b.mtime);
+  const videoIndex = {};
 
-// For each hash video, find the first named video whose mtime > hash mtime
-hashVideos.forEach(hashVid => {
-  const owner = latestNamedVideos.find(named => named.mtime > hashVid.mtime);
-  if (owner) {
-    const mlrMatch = owner.name.match(/MLR-(\d+)/);
-    if (mlrMatch) {
-      const mlrTag = `MLR-${mlrMatch[1]}`;
-      // Only assign if not already claimed (first hash wins)
-      if (!videoIndex[mlrTag]?.yopmail) {
-        console.log(`  Assigning hash ${hashVid.name} → ${mlrTag} (named mtime: ${new Date(owner.mtime).toISOString()})`);
-        videoIndex[mlrTag].yopmail = hashVid;  // store object temporarily
+  latestNamedVideos.forEach(vid => {
+    const mlrMatch = vid.name.match(/MLR-(\d+)/);
+    if (!mlrMatch) return;
+    const mlrTag = `MLR-${mlrMatch[1]}`;
+    videoIndex[mlrTag] = { app: null, yopmail: null };
+  });
+
+  hashVideos.forEach(hashVid => {
+    const owner = latestNamedVideos.find(named => named.mtime > hashVid.mtime);
+    if (owner) {
+      const mlrMatch = owner.name.match(/MLR-(\d+)/);
+      if (mlrMatch) {
+        const mlrTag = `MLR-${mlrMatch[1]}`;
+        if (!videoIndex[mlrTag]?.yopmail) {
+          videoIndex[mlrTag].yopmail = hashVid;
+        }
       }
     }
+  });
+
+  latestNamedVideos.forEach((mainVid) => {
+    const mlrMatch = mainVid.name.match(/MLR-(\d+)/);
+    if (!mlrMatch) return;
+    const mlrTag = `MLR-${mlrMatch[1]}`;
+
+    const appDest = `${RUN_ID}-${module.name}-${mlrTag}-app.webm`;
+    fs.mkdirSync(videosDir, { recursive: true });
+    fs.copyFileSync(mainVid.path, path.join(videosDir, appDest));
+
+    const runVideosDir = `docs/reports/runs/${RUN_ID}/videos`;
+    fs.mkdirSync(runVideosDir, { recursive: true });
+    fs.copyFileSync(mainVid.path, path.join(runVideosDir, appDest));
+
+    videoIndex[mlrTag].app = appDest;
+
+    const yopmailVidObj = videoIndex[mlrTag]?.yopmail;
+    if (yopmailVidObj) {
+      const yopmailDest = `${RUN_ID}-${module.name}-${mlrTag}-yopmail.webm`;
+      fs.copyFileSync(yopmailVidObj.path, path.join(videosDir, yopmailDest));
+      fs.copyFileSync(yopmailVidObj.path, path.join(runVideosDir, yopmailDest));
+      videoIndex[mlrTag].yopmail = yopmailDest;
+    }
+  });
+
+  const moduleIndexFile = path.join(videosDir, `index-${module.name}.json`);
+  fs.writeFileSync(moduleIndexFile, JSON.stringify(videoIndex, null, 2));
+
+  // Merge into master index.json for the dashboard
+  const masterIndexFile = path.join(videosDir, 'index.json');
+  let masterIndex = {};
+  if (fs.existsSync(masterIndexFile)) {
+    try { masterIndex = JSON.parse(fs.readFileSync(masterIndexFile, 'utf8')); } catch (e) {}
   }
-});
+  Object.assign(masterIndex, videoIndex);
+  fs.writeFileSync(masterIndexFile, JSON.stringify(masterIndex, null, 2));
 
-latestNamedVideos.forEach((mainVid, index) => {
-  const mlrMatch = mainVid.name.match(/MLR-(\d+)/);
-  if (!mlrMatch) return;
-  const mlrTag = `MLR-${mlrMatch[1]}`;
+  const destJson = `docs/reports/_hap_fe_${module.name}.json`;
+  const runDestJson = `docs/reports/runs/${RUN_ID}/_hap_fe_${module.name}.json`;
+  fs.mkdirSync(path.dirname(runDestJson), { recursive: true });
+  fs.copyFileSync(cucumberJsonPath, destJson);
+  fs.copyFileSync(cucumberJsonPath, runDestJson);
+  console.log(`✅ Synced ${module.name} results`);
+}
 
-  console.log(`${mlrTag}: app=${mainVid.name}`);
-  const yopmailVidObj = videoIndex[mlrTag]?.yopmail;
-  console.log(`${mlrTag}: yopmail=${yopmailVidObj?.name || 'none'}`);
-
-  // Reset to strings for the final index
-  videoIndex[mlrTag] = { app: null, yopmail: null };
-
-  // Copy app video
-  const appDest = `${RUN_ID}-${mlrTag}-app.webm`;
-  fs.mkdirSync(videosDir, { recursive: true });
-  fs.copyFileSync(mainVid.path, path.join(videosDir, appDest));
-
-  // Copy run-specific app video
-  const runVideosDir = `qa-dashboard/reports/runs/${RUN_ID}/videos`;
-  fs.mkdirSync(runVideosDir, { recursive: true });
-  fs.copyFileSync(mainVid.path, path.join(runVideosDir, appDest));
-
-  videoIndex[mlrTag].app = appDest;
-
-  // Copy yopmail video if found
-  if (yopmailVidObj) {
-    const yopmailDest = `${RUN_ID}-${mlrTag}-yopmail.webm`;
-    fs.copyFileSync(yopmailVidObj.path, path.join(videosDir, yopmailDest));
-    fs.copyFileSync(yopmailVidObj.path, path.join(runVideosDir, yopmailDest));
-    videoIndex[mlrTag].yopmail = yopmailDest;
-    console.log(`✅ ${mlrTag}: stitched yopmail video → ${yopmailDest}`);
-  } else {
-    console.log(`✅ ${mlrTag}: no yopmail tab video found`);
-  }
-});
-
-// ── Write index.json (object keyed by MLR tag) ───────────────────────────────
-fs.mkdirSync(videosDir, { recursive: true });
-fs.writeFileSync(
-  path.join(videosDir, 'index.json'),
-  JSON.stringify(videoIndex, null, 2)
-);
-
-const runVideosDir = `qa-dashboard/reports/runs/${RUN_ID}/videos`;
-fs.mkdirSync(runVideosDir, { recursive: true });
-fs.writeFileSync(
-  path.join(runVideosDir, 'index.json'),
-  JSON.stringify(videoIndex, null, 2)
-);
-
-console.log('\nVideo index written:');
-console.log(JSON.stringify(videoIndex, null, 2));
-
-// ── Copy cucumber JSON to dashboard ──────────────────────────────────────────
-fs.mkdirSync(`qa-dashboard/reports/runs/${RUN_ID}`, { recursive: true });
-fs.copyFileSync(cucumberJsonPath, `qa-dashboard/reports/runs/${RUN_ID}/_hap_fe_auth.json`);
-fs.copyFileSync(cucumberJsonPath, 'qa-dashboard/reports/_hap_fe_auth.json');
-
-// ── Append to run-history.json ────────────────────────────────────────────────
-const historyPath = 'qa-dashboard/reports/run-history.json';
+const historyPath = 'docs/reports/run-history.json';
 let history = [];
 if (fs.existsSync(historyPath)) {
   history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
 }
-const passedScenarios = allScenarios.filter(s =>
-  (s.steps || []).every(st => st.result?.status === 'passed' || st.hidden)
-).length;
 history.push({
   id: RUN_ID,
   timestamp: new Date().toISOString(),
-  totalScenarios: allScenarios.length,
-  passedScenarios,
-  failedScenarios: allScenarios.length - passedScenarios
+  totalScenarios,
+  passedScenarios: totalPassed,
+  failedScenarios: totalScenarios - totalPassed
 });
 fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
 console.log('✅ Updated run-history.json');
@@ -189,7 +165,7 @@ const KNOWN_BLOCKERS = [
   'Timeout errors on yopmail.com are caused by bot detection CAPTCHA'
 ];
 
-async function analyzeFailure(scenario, featureName) {
+async function analyzeFailure(scenario, featureName, videoIndex) {
   const mlrTag = (scenario.tags || [])
     .map(t => t.name.replace('@', ''))
     .find(t => t.startsWith('MLR-'));
@@ -222,6 +198,9 @@ async function analyzeFailure(scenario, featureName) {
       source: { type: 'base64', media_type: 'image/png', data: screenshotData }
     });
   }
+
+  const rawError = failedStep.result?.error_message || 'No error message';
+
   userContent.push({
     type: 'text',
     text: `FAILED TEST:
@@ -229,7 +208,9 @@ Scenario: ${scenario.name}
 Tag: ${mlrTag}
 Feature: ${featureName}
 Failed Step: "${failedStep.keyword}${failedStep.name}"
-Error: ${failedStep.result?.error_message || 'No error message'}
+Error (Raw Log & Stack Trace): 
+${rawError}
+
 Duration: ${failedStep.result?.duration}ns
 Video recorded: ${videoAvailable ? 'YES' : 'NO'}
 
@@ -238,13 +219,18 @@ ${KNOWN_BLOCKERS.join('\n')}
 
 ${screenshotData ? 'Failure screenshot attached.' : 'No screenshot available.'}
 
+INSTRUCTIONS:
+1. Explain the "Error (Raw Log & Stack Trace)" in plain English for a non-technical stakeholder in the "what_happened" field.
+2. Provide a technical root cause in "root_cause".
+3. Return the exact JSON format requested below.
+
 Return this exact JSON:
 {
   "type": "REAL_BUG" | "ENVIRONMENT_ISSUE" | "TEST_ISSUE",
   "confidence": "HIGH" | "MEDIUM" | "LOW",
   "severity": "CRITICAL" | "HIGH" | "MEDIUM" | "LOW",
-  "headline": "One line: what failed",
-  "what_happened": "2-3 sentences: what the test was doing when it failed",
+  "headline": "One line: clean summary of what failed",
+  "what_happened": "2-3 sentences: plain English explanation of what the test was doing and what exactly went wrong",
   "root_cause": "Technical root cause explanation",
   "is_app_bug": true | false,
   "app_component": "affected component or null",
@@ -267,7 +253,7 @@ Return this exact JSON:
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-5',
         max_tokens: 2000,
         system: 'You are a senior QA engineer and developer analyzing test failures. Respond ONLY with valid JSON. No markdown. No text outside JSON.',
         messages: [{ role: 'user', content: userContent }]
@@ -310,32 +296,43 @@ if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'your_key_here') {
   console.log('\n⚠️  ANTHROPIC_API_KEY not set in .env — skipping AI analysis');
   doGitPush();
 } else {
-  const dashboardJson = JSON.parse(
-    fs.readFileSync('qa-dashboard/reports/_hap_fe_auth.json', 'utf8')
-  );
-  const featuresArray = Array.isArray(dashboardJson)
-    ? dashboardJson
-    : (dashboardJson.results || []);
+  let anyFailures = false;
+  const reports = fs.readdirSync('docs/reports').filter(f => f.endsWith('.json') && f.startsWith('_hap_fe_'));
 
-  let hasFailures = false;
+  for (const reportFile of reports) {
+    const reportPath = path.join('docs/reports', reportFile);
+    const moduleName = reportFile.replace('_hap_fe_', '').replace('.json', '');
+    
+    // Load video index for this module
+    const vIndexFile = path.join(videosDir, `index-${moduleName}.json`);
+    const vIndex = fs.existsSync(vIndexFile) ? JSON.parse(fs.readFileSync(vIndexFile, 'utf8')) : {};
 
-  for (const feature of featuresArray) {
-    for (const scenario of (feature.elements || [])) {
-      const hasFailed = (scenario.steps || []).some(s => s.result?.status === 'failed');
-      if (!hasFailed) continue;
+    const dashboardJson = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+    const featuresArray = Array.isArray(dashboardJson) ? dashboardJson : (dashboardJson.results || []);
 
-      hasFailures = true;
-      const analysis = await analyzeFailure(scenario, feature.name);
-      if (analysis) scenario.aiAnalysis = analysis;
+    let moduleFailures = false;
+    for (const feature of featuresArray) {
+      for (const scenario of (feature.elements || [])) {
+        const hasFailed = (scenario.steps || []).some(s => s.result?.status === 'failed');
+        if (!hasFailed) continue;
+
+        anyFailures = true;
+        moduleFailures = true;
+        const analysis = await analyzeFailure(scenario, feature.name, vIndex);
+        if (analysis) scenario.aiAnalysis = analysis;
+      }
+    }
+
+    if (moduleFailures) {
+      const enriched = JSON.stringify(dashboardJson, null, 2);
+      fs.writeFileSync(reportPath, enriched);
+      // Also update the run-specific copy
+      fs.writeFileSync(`docs/reports/runs/${RUN_ID}/${reportFile}`, enriched);
     }
   }
 
-  if (hasFailures) {
-    const enriched = JSON.stringify(dashboardJson, null, 2);
-    fs.writeFileSync('qa-dashboard/reports/_hap_fe_auth.json', enriched);
-    fs.writeFileSync(`qa-dashboard/reports/runs/${RUN_ID}/_hap_fe_auth.json`, enriched);
+  if (anyFailures) {
     console.log('\n✅ AI analysis injected into dashboard JSON');
-
     // Ask user about ticket creation
     const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
     rl.question('\n📋 Create Jira + GitHub tickets for failed scenarios? (yes/no): ', async (answer) => {
@@ -358,7 +355,7 @@ if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'your_key_here') {
 function doGitPush() {
   try {
     console.log('\n🚀 Pushing to GitHub...');
-    execSync('git add qa-dashboard/', { stdio: 'inherit' });
+    execSync('git add docs/', { stdio: 'inherit' });
     execSync(`git commit -m "test: sync run ${RUN_ID}"`, { stdio: 'inherit' });
     execSync('git push origin main', { stdio: 'inherit' });
     console.log('✅ Pushed to GitHub — dashboard will update shortly');

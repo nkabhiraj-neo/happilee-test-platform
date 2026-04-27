@@ -1,0 +1,135 @@
+[
+  {
+    "id": 1777218041087,
+    "timestamp": "2026-04-26T15:40:41.129Z",
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "failedScenarios": 0
+  },
+  {
+    "id": 1777218406433,
+    "timestamp": "2026-04-26T15:46:46.489Z",
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "failedScenarios": 0
+  },
+  {
+    "id": 1777220775694,
+    "timestamp": "2026-04-26T16:26:15.763Z",
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "failedScenarios": 0
+  },
+  {
+    "id": 1777222583839,
+    "timestamp": "2026-04-26T16:56:24.054Z",
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "failedScenarios": 0
+  },
+  {
+    "id": 1777222621487,
+    "timestamp": "2026-04-26T16:57:01.561Z",
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "failedScenarios": 0
+  },
+  {
+    "id": 1777222820924,
+    "timestamp": "2026-04-26T17:00:20.997Z",
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "failedScenarios": 0
+  },
+  {
+    "id": 1777222874029,
+    "timestamp": "2026-04-26T17:01:14.101Z",
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "failedScenarios": 0
+  },
+  {
+    "id": 1777264461599,
+    "timestamp": "2026-04-27T04:34:21.668Z",
+    "totalScenarios": 6,
+    "passedScenarios": 5,
+    "failedScenarios": 1
+  },
+  {
+    "id": 1777264485108,
+    "timestamp": "2026-04-27T04:34:45.163Z",
+    "totalScenarios": 6,
+    "passedScenarios": 5,
+    "failedScenarios": 1
+  },
+  {
+    "id": 1777266236752,
+    "timestamp": "2026-04-27T05:03:56.818Z",
+    "totalScenarios": 6,
+    "passedScenarios": 5,
+    "failedScenarios": 1
+  },
+  {
+    "id": 1777267119094,
+    "timestamp": "2026-04-27T05:18:39.270Z",
+    "totalScenarios": 12,
+    "passedScenarios": 9,
+    "failedScenarios": 3
+  },
+  {
+    "id": 1777267159379,
+    "timestamp": "2026-04-27T05:19:19.535Z",
+    "totalScenarios": 12,
+    "passedScenarios": 9,
+    "failedScenarios": 3
+  },
+  {
+    "id": 1777267191574,
+    "timestamp": "2026-04-27T05:19:51.722Z",
+    "totalScenarios": 12,
+    "passedScenarios": 9,
+    "failedScenarios": 3
+  },
+  {
+    "id": 1777267233544,
+    "timestamp": "2026-04-27T05:20:33.740Z",
+    "totalScenarios": 12,
+    "passedScenarios": 9,
+    "failedScenarios": 3
+  },
+  {
+    "id": 1777267266462,
+    "timestamp": "2026-04-27T05:21:06.645Z",
+    "totalScenarios": 12,
+    "passedScenarios": 9,
+    "failedScenarios": 3
+  },
+  {
+    "id": 1777267295257,
+    "timestamp": "2026-04-27T05:21:35.437Z",
+    "totalScenarios": 12,
+    "passedScenarios": 9,
+    "failedScenarios": 3
+  },
+  {
+    "id": 1777269697988,
+    "timestamp": "2026-04-27T06:01:38.195Z",
+    "totalScenarios": 12,
+    "passedScenarios": 5,
+    "failedScenarios": 7
+  },
+  {
+    "id": 1777271214499,
+    "timestamp": "2026-04-27T06:26:54.862Z",
+    "totalScenarios": 12,
+    "passedScenarios": 5,
+    "failedScenarios": 7
+  },
+  {
+    "id": 1777271656387,
+    "timestamp": "2026-04-27T06:34:16.735Z",
+    "totalScenarios": 12,
+    "passedScenarios": 5,
+    "failedScenarios": 7
+  }
+]
