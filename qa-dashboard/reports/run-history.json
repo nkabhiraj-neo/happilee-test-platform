@@ -47,5 +47,26 @@
     "totalScenarios": 5,
     "passedScenarios": 5,
     "failedScenarios": 0
+  },
+  {
+    "id": 1777264461599,
+    "timestamp": "2026-04-27T04:34:21.668Z",
+    "totalScenarios": 6,
+    "passedScenarios": 5,
+    "failedScenarios": 1
+  },
+  {
+    "id": 1777264485108,
+    "timestamp": "2026-04-27T04:34:45.163Z",
+    "totalScenarios": 6,
+    "passedScenarios": 5,
+    "failedScenarios": 1
+  },
+  {
+    "id": 1777266236752,
+    "timestamp": "2026-04-27T05:03:56.818Z",
+    "totalScenarios": 6,
+    "passedScenarios": 5,
+    "failedScenarios": 1
   }
 ]
