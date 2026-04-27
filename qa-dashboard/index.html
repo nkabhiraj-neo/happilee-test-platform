@@ -2098,7 +2098,7 @@
                     width: '100%', display: 'block', background: '#000',
                     borderRadius: '0 0 6px 6px', border: '1px solid #e2e8f0'
                   }}>
-                    <source src={`/reports/videos/${scenarioVideos.app}`} type="video/webm" />
+                    <source src={`./reports/videos/${scenarioVideos.app}`} type="video/webm" />
                     Your browser does not support video playback.
                   </video>
                 </div>
@@ -2118,7 +2118,7 @@
                       width: '100%', display: 'block', background: '#000',
                       borderRadius: '0 0 6px 6px', border: '1px solid #fde68a'
                     }}>
-                      <source src={`/reports/videos/${scenarioVideos.yopmail}`} type="video/webm" />
+                      <source src={`./reports/videos/${scenarioVideos.yopmail}`} type="video/webm" />
                       Your browser does not support video playback.
                     </video>
                   </div>
@@ -2229,34 +2229,7 @@
                   {/* Manual re-analyze button */}
                   <div style={{marginTop:'12px', textAlign:'right'}}>
                     <button onClick={async (event) => {
-                      const tag = (el.tags||[]).find(t=>t.name.startsWith('@MLR'))?.name?.replace('@','') || ''
-                      const failedSt = (el.steps||[]).find(s=>s.result?.status==='failed')
-                      const shot = (failedSt?.embeddings||[]).find(e=>e.mime_type?.startsWith('image/'))?.data
-                      const btn = event.target
-                      btn.textContent = '⏳ Analyzing...'
-                      btn.disabled = true
-                      try {
-                        const res = await fetch('/.netlify/functions/analyze-failure', {
-                          method:'POST',
-                          headers:{'Content-Type':'application/json'},
-                          body: JSON.stringify({
-                            scenarioName: el.name,
-                            mlrTag: tag,
-                            failedStep: failedSt ? `${failedSt.keyword}${failedSt.name}` : '',
-                            errorMessage: failedSt?.result?.error_message || '',
-                            screenshot: shot || null,
-                            videoAvailable: true,
-                            knownBlockers: ['MLR-203: Yopmail CAPTCHA blocks automated OTP fetch — ENVIRONMENT_ISSUE not a bug']
-                          })
-                        })
-                        const analysis = await res.json()
-                        alert(`🤖 Re-analysis complete!\n\nType: ${analysis.type}\nHeadline: ${analysis.headline}\n\nRefresh the page to see updated analysis if it was saved.`)
-                      } catch(e) {
-                        alert('Analysis failed: ' + e.message)
-                      } finally {
-                        btn.textContent = '🔄 Re-analyze'
-                        btn.disabled = false
-                      }
+                      alert("To re-analyze, run: node e2e/scripts/post-run-sync.mjs\nThe analysis will update automatically on next push.");
                     }} style={{
                       padding:'5px 12px', borderRadius:'6px',
                       border:'1px solid #e2e8f0', background:'#fff',
@@ -2454,7 +2427,7 @@
       const prevStats = useRef(null);
 
       useEffect(() => {
-        fetch('/reports/videos/index.json')
+        fetch('./reports/videos/index.json')
           .then(r => r.json())
           .then(data => setVideoIndex(data))
           .catch(() => setVideoIndex({}));
