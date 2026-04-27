@@ -1857,8 +1857,8 @@
     const ns2s = ns => { if (!ns) return '0.00s'; const s = ns / 1e9; if (s >= 60) return `${Math.floor(s / 60)}m ${(s % 60).toFixed(1)}s`; return `${s.toFixed(2)}s`; };
     const ns2ms = ns => { if (!ns) return '0ms'; const ms = ns / 1e6; return ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${ms.toFixed(0)}ms`; };
     const totalNs = fs => fs.flatMap(f => f.elements || []).flatMap(e => e.steps || []).reduce((a, s) => a + (s.result?.duration || 0), 0);
-    const scenSt = el => { const st = (el.steps || []).filter(s => !s.hidden); if (st.some(s => s.result?.status === 'failed')) return 'failed'; if (st.some(s => s.result?.status === 'skipped')) return 'skipped'; return 'passed'; };
-    const stats = fs => { let p = 0, f = 0, sk = 0; (fs || []).forEach(ft => (ft.elements || []).forEach(el => (el.steps || []).forEach(step => { if (step.hidden) return; const s = step.result?.status; if (s === 'passed') p++; else if (s === 'failed') f++; else if (s === 'skipped') sk++; }))); return { passed: p, failed: f, skipped: sk, total: p + f + sk }; };
+    const scenSt = el => { const st = (el.steps || []).filter(s => !s.hidden); if (st.some(s => s.result?.status === 'failed')) return 'failed'; if (st.every(s => s.result?.status === 'skipped')) return 'skipped'; return 'passed'; };
+    const stats = fs => { const allScenarios = (fs || []).flatMap(ft => ft.elements || []); let p = 0, f = 0, sk = 0; allScenarios.forEach(el => { const status = scenSt(el); if (status === 'passed') p++; else if (status === 'failed') f++; else if (status === 'skipped') sk++; }); return { passed: p, failed: f, skipped: sk, total: allScenarios.length }; };
     const b64t = s => { try { return atob(s); } catch { return s; } };
     const fmtD = ts => new Date(ts).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
     const tclass = t => { const v = t.toLowerCase(); if (/@[a-z]+-\d+/.test(v) || /@prj|@mlr/.test(v)) return 'req'; if (v === '@regression') return 'reg'; if (v === '@smoke') return 'smk'; if (v.startsWith('@project') || v.startsWith('@auth')) return 'prj'; return ''; };
@@ -2585,9 +2585,9 @@
               <div className="hero">
                 <div className="metrics">
                   {[
-                    { cls: 'mc-tot', g: '📋', l: 'Total Steps', v: st.total, s: `${features.length} feature${features.length > 1 ? 's' : ''}`, a: 'afu' },
-                    { cls: 'mc-pas', g: '✅', l: 'Passed Steps', v: st.passed, s: `${pRate}% pass rate`, a: 'afu1' },
-                    { cls: 'mc-fai', g: '❌', l: 'Failed Steps', v: st.failed, s: st.failed > 0 ? 'needs attention' : 'all clear', a: 'afu2' },
+                    { cls: 'mc-tot', g: '📋', l: 'Total Scenarios', v: st.total, s: `${features.length} feature${features.length > 1 ? 's' : ''}`, a: 'afu' },
+                    { cls: 'mc-pas', g: '✅', l: 'Passed Scenarios', v: st.passed, s: `${pRate}% pass rate`, a: 'afu1' },
+                    { cls: 'mc-fai', g: '❌', l: 'Failed Scenarios', v: st.failed, s: st.failed > 0 ? 'needs attention' : 'all clear', a: 'afu2' },
                     { cls: 'mc-dur', g: '⏱', l: 'Duration', v: ns2s(dur), s: 'total run time', a: 'afu3' },
                   ].map(({ cls, g, l, v, s, a }) => (
                     <div key={cls} className={`mcard ${cls} ${a} ${flashCards ? 'flash' : ''}`}>
@@ -2605,7 +2605,7 @@
                 <div className="pstrip-hdr">
                   <span className="plabel">Pass / Fail / Skipped Distribution</span>
                   <span className="prate" style={{ color: st.failed > 0 ? 'var(--fail)' : 'var(--pass)' }}>
-                    {st.failed > 0 ? `${st.failed} step${st.failed > 1 ? 's' : ''} need attention` : '✓ All passing'}
+                    {st.failed > 0 ? `${st.failed} scenario${st.failed > 1 ? 's' : ''} need attention` : '✓ All passing'}
                   </span>
                 </div>
                 <div className="ptrack">
