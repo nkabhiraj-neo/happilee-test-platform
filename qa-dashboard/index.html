@@ -1895,18 +1895,98 @@
       );
     }
 
-    function Step({ step, idx }) {
+    function Step({ step, idx, el }) {
       if (step.hidden) return null;
       const st = step.result?.status || 'skipped';
       const icon = st === 'passed' ? '✓' : st === 'failed' ? '✕' : '–';
-      const err = step.result?.error_message;
+      
       const embs = step.embeddings || [];
       return (
         <div className="steprow" style={{ animationDelay: `${idx * 0.03}s` }}>
           <div className={`stepdot ${st}`}>{icon}</div>
           <div className="stcont">
             <div className="sttxt"><span className="stkw">{step.keyword}</span>{step.name}</div>
-            {err && <div className="errblk"><div className="errhdr"><span>⚠</span><span className="errtxt">Error Details</span></div><pre className="errbody">{err}</pre></div>}
+            
+            {step.result?.error_message && (
+              <div>
+                {/* If AI analysis exists show clean version */}
+                {el.aiAnalysis ? (
+                  <div style={{
+                    padding: '12px',
+                    background: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '8px',
+                    marginTop: '8px'
+                  }}>
+                    <div style={{
+                      fontWeight: 600,
+                      color: '#dc2626',
+                      marginBottom: '6px',
+                      fontSize: '13px'
+                    }}>
+                      ⚠️ {el.aiAnalysis.headline}
+                    </div>
+                    <div style={{
+                      color: '#7f1d1d',
+                      fontSize: '13px',
+                      lineHeight: '1.6',
+                      marginBottom: '10px'
+                    }}>
+                      {el.aiAnalysis.what_happened}
+                    </div>
+                    <details>
+                      <summary style={{
+                        fontSize: '11px',
+                        color: '#dc2626',
+                        cursor: 'pointer'
+                      }}>
+                        Show technical details
+                      </summary>
+                      <pre style={{
+                        fontSize: '11px',
+                        color: '#7f1d1d',
+                        marginTop: '8px',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word',
+                        background: '#fff',
+                        padding: '8px',
+                        borderRadius: '4px'
+                      }}>
+                        {step.result.error_message}
+                      </pre>
+                    </details>
+                  </div>
+                ) : (
+                  /* No AI analysis yet — show raw but formatted */
+                  <div style={{
+                    padding: '12px',
+                    background: '#fef2f2',
+                    border: '1px solid #fecaca',
+                    borderRadius: '8px',
+                    marginTop: '8px'
+                  }}>
+                    <div style={{
+                      fontWeight: 600,
+                      color: '#dc2626',
+                      marginBottom: '6px',
+                      fontSize: '12px'
+                    }}>
+                      ⚠️ ERROR DETAILS
+                    </div>
+                    <pre style={{
+                      fontSize: '11px',
+                      color: '#7f1d1d',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      margin: 0
+                    }}>
+                      {step.result.error_message}
+                    </pre>
+                  </div>
+                )}
+              </div>
+            )}
+
             {(step.embeddings || [])
               .filter(e => e.mime_type?.startsWith('image/'))
               .map((emb, i) => (
@@ -1977,7 +2057,7 @@
           </div>
           {open && <div className="spanel">
             <div className="sphdr">Steps · {steps.length} total</div>
-            {(el.steps || []).map((s, i) => <Step key={i} step={s} idx={i} />)}
+            {(el.steps || []).map((s, i) => <Step key={i} step={s} idx={i} el={el} />)}
 
             {scenarioScreenshots.map((emb, i) => (
               <div key={i} style={{

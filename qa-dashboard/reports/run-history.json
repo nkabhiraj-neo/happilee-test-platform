@@ -68,5 +68,47 @@
     "totalScenarios": 6,
     "passedScenarios": 5,
     "failedScenarios": 1
+  },
+  {
+    "id": 1777267119094,
+    "timestamp": "2026-04-27T05:18:39.270Z",
+    "totalScenarios": 12,
+    "passedScenarios": 9,
+    "failedScenarios": 3
+  },
+  {
+    "id": 1777267159379,
+    "timestamp": "2026-04-27T05:19:19.535Z",
+    "totalScenarios": 12,
+    "passedScenarios": 9,
+    "failedScenarios": 3
+  },
+  {
+    "id": 1777267191574,
+    "timestamp": "2026-04-27T05:19:51.722Z",
+    "totalScenarios": 12,
+    "passedScenarios": 9,
+    "failedScenarios": 3
+  },
+  {
+    "id": 1777267233544,
+    "timestamp": "2026-04-27T05:20:33.740Z",
+    "totalScenarios": 12,
+    "passedScenarios": 9,
+    "failedScenarios": 3
+  },
+  {
+    "id": 1777267266462,
+    "timestamp": "2026-04-27T05:21:06.645Z",
+    "totalScenarios": 12,
+    "passedScenarios": 9,
+    "failedScenarios": 3
+  },
+  {
+    "id": 1777267295257,
+    "timestamp": "2026-04-27T05:21:35.437Z",
+    "totalScenarios": 12,
+    "passedScenarios": 9,
+    "failedScenarios": 3
   }
 ]
