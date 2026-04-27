@@ -122,9 +122,20 @@ for (const module of modules) {
 
   const destJson = `docs/reports/_hap_fe_${module.name}.json`;
   const runDestJson = `docs/reports/runs/${RUN_ID}/_hap_fe_${module.name}.json`;
+  
+  const wrappedJson = {
+    _meta: {
+      generatedAt: new Date().toISOString(),
+      runId: RUN_ID,
+      version: RUN_ID,
+      module: module.name
+    },
+    features: cucumberJson
+  };
+
   fs.mkdirSync(path.dirname(runDestJson), { recursive: true });
-  fs.copyFileSync(cucumberJsonPath, destJson);
-  fs.copyFileSync(cucumberJsonPath, runDestJson);
+  fs.writeFileSync(destJson, JSON.stringify(wrappedJson, null, 2));
+  fs.writeFileSync(runDestJson, JSON.stringify(wrappedJson, null, 2));
   console.log(`✅ Synced ${module.name} results`);
 }
 

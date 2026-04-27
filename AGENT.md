@@ -254,3 +254,9 @@ When adding any new `_hap_fe_*` module, always do ALL of these:
 - One ticket per root cause, not one per scenario.
 - Environment issues (Yopmail CAPTCHA) → no ticket needed.
 
+### Data Freshness
+- All `fetch()` calls use `?t=Date.now()` + `cache: 'no-store'`.
+- Dashboard auto-refreshes every 60s when Live is ON.
+- `post-run-sync.mjs` always pushes fresh data with `_meta` timestamp.
+- Never rely on browser cache for report data.
+

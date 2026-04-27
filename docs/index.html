@@ -2270,7 +2270,7 @@
       React.useEffect(() => {
         const poll = setInterval(async () => {
           try {
-            const res = await fetch('./reports/live-status.json?' + Date.now(), { cache: 'no-store' });
+            const res = await fetch('./reports/live-status.json?t=' + Date.now(), { cache: 'no-store' });
             if (!res.ok) return;
             const json = await res.json();
             setData(json);
@@ -2427,7 +2427,7 @@
       const prevStats = useRef(null);
 
       useEffect(() => {
-        fetch('./reports/videos/index.json')
+        fetch('./reports/videos/index.json?t=' + Date.now(), { cache: 'no-store' })
           .then(r => r.json())
           .then(data => setVideoIndex(data))
           .catch(() => setVideoIndex({}));
@@ -2441,10 +2441,11 @@
         const url = BLOCKS.find(x => x.id === b)?.url || './reports/_hap_fe_project.json';
         setLoading(true);
         setAutoLoadBlocked(false);
-        fetch(url)
+        fetch(url + '?t=' + Date.now(), { cache: 'no-store' })
           .then(res => { if (!res.ok) throw new Error(res.status); return res.json(); })
           .then(data => {
             const fs = Array.isArray(data) ? data : (data.features || []);
+            const meta = data._meta || null;
             if (!fs.length) { setFeatures(null); setFileName(null); setLoading(false); setNotificationBanner(null); return; }
             const newSt = stats(fs);
             const changed = prevStats.current && (prevStats.current.passed !== newSt.passed || prevStats.current.failed !== newSt.failed || prevStats.current.skipped !== newSt.skipped);
@@ -2457,7 +2458,7 @@
             setFileName(`${b}.json`);
             setActiveId(h[0].id);
             setFilter('all');
-            setLastLoadedAt(Date.now());
+            setLastLoadedAt(meta ? new Date(meta.generatedAt).getTime() : Date.now());
             setLoading(false);
           })
           .catch(() => { setAutoLoadBlocked(true); setLoading(false); setNotificationBanner(null); });
