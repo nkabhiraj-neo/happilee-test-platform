@@ -2270,7 +2270,7 @@
       React.useEffect(() => {
         const poll = setInterval(async () => {
           try {
-            const res = await fetch('../_hap_fe_project/reports/live-status.json?' + Date.now(), { cache: 'no-store' });
+            const res = await fetch('./reports/live-status.json?' + Date.now(), { cache: 'no-store' });
             if (!res.ok) return;
             const json = await res.json();
             setData(json);
@@ -2531,16 +2531,16 @@
                   <div className="dtitle afu">Loading report...</div>
                 ) : (<>
                   <div className="dtitle afu">No report found — run your tests first</div>
-                  <div className="ddesc afu1">
-                    Run tests and copy reports to <code>qa-dashboard/reports/</code><br />
-                    From root: <code>npm run test:project</code> or <code>npm run test:auth</code>
-                  </div>
-                  {autoLoadBlocked && (
-                    <div className="errblk" style={{ margin: '0 auto 20px', maxWidth: 480 }}>
-                      <div className="errhdr"><span>⚠</span><span className="errtxt">Auto-load blocked by browser</span></div>
-                      <div className="errbody" style={{ background: 'transparent', color: 'inherit', whiteSpace: 'normal' }}>
-                        Either open via a local server (<code>cd qa-dashboard && npm run serve</code>) or drag and drop a report below.
-                      </div>
+                    <div className="ddesc afu1">
+                      Run tests and copy reports to <code>docs/reports/</code><br />
+                      From root: <code>npm run test:project</code> or <code>npm run test:auth</code>
+                    </div>
+                    {autoLoadBlocked && (
+                      <div className="errblk" style={{ margin: '0 auto 20px', maxWidth: 480 }}>
+                        <div className="errhdr"><span>⚠</span><span className="errtxt">Auto-load blocked by browser</span></div>
+                        <div className="errbody" style={{ background: 'transparent', color: 'inherit', whiteSpace: 'normal' }}>
+                          Either open via a local server (<code>cd docs && npm run serve</code>) or drag and drop a report below.
+                        </div>
                       <div style={{ padding: '8px 12px', borderTop: '1px solid var(--fail-ring)' }}>
                         <button className="btn" style={{ fontSize: 12 }} onClick={e => { e.stopPropagation(); loadFromUrl(); }}>🔄 Retry fetch</button>
                       </div>
