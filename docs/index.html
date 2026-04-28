@@ -2040,6 +2040,27 @@
 
       // Find videos for this scenario from the index object
       const scenarioVideos = scenarioTag ? (videoIndex[scenarioTag] || null) : null;
+      const networkEmb = [...(el.before || []), ...(el.after || []), ...(el.steps || [])]
+        .flatMap(h => h.embeddings || [])
+        .find(e => e.mime_type === 'application/json');
+      let networkData = null;
+      try {
+        networkData = networkEmb ? JSON.parse(atob(networkEmb.data)) : null;
+      } catch {
+        networkData = null;
+      }
+      const criticalNetworkFailure = (networkData?.failed_requests || [])
+        .find(r => (r.status || 0) >= 500) || (networkData?.failed_requests || [])
+        .find(r => (r.status || 0) >= 400) || null;
+      const failureMessage = (() => {
+        if (!criticalNetworkFailure?.responseBody || criticalNetworkFailure.responseBody === 'Could not read response') return null;
+        try {
+          const parsed = JSON.parse(criticalNetworkFailure.responseBody);
+          return parsed?.message || parsed?.error || JSON.stringify(parsed).slice(0, 220);
+        } catch {
+          return String(criticalNetworkFailure.responseBody).slice(0, 220);
+        }
+      })();
 
       return (
         <div className="swrap">
@@ -2167,6 +2188,27 @@
 
                 {/* Analysis body */}
                 <div style={{padding:'16px', background:'#fff'}}>
+                  {criticalNetworkFailure && (
+                    <div style={{
+                      marginBottom: '14px',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #fecaca',
+                      background: '#fff1f2'
+                    }}>
+                      <div style={{fontSize:'11px', fontWeight:700, color:'#b91c1c', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'4px'}}>
+                        Exact API Failure Detected
+                      </div>
+                      <div style={{fontSize:'13px', color:'#7f1d1d', lineHeight:'1.5'}}>
+                        <strong>{criticalNetworkFailure.method} {criticalNetworkFailure.status}</strong> {criticalNetworkFailure.url}
+                        {failureMessage && (
+                          <div style={{marginTop:'4px'}}>
+                            Response: <code>{failureMessage}</code>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <div style={{fontSize:'15px', fontWeight:600, color:'#0f172a', marginBottom:'16px'}}>
                     {el.aiAnalysis.headline}
                   </div>
