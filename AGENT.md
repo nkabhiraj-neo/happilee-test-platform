@@ -268,3 +268,46 @@ Full test flow (always in this order):
 4. Report results in chat with AI analysis
 5. Ask about tickets
 
+## CORRECT TEST COMMANDS
+
+### _hap_fe_auth:
+```powershell
+cd codebase/_hap_fe_auth
+$env:HEADLESS="false"
+$env:TS_NODE_PROJECT="../tsconfig.json"
+npx --prefix .. cucumber-js `
+  "tests/bdd/features/login/auth-login.feature" `
+  --require "tests/bdd/support/world.ts" `
+  --require "tests/bdd/support/hooks.ts" `
+  --require "tests/bdd/steps/**/*.ts" `
+  --require-module ts-node/register `
+  --format json:artifacts/cucumber/cucumber.json `
+  --format pretty
+```
+
+### _hap_fe_project:
+```powershell
+cd codebase/_hap_fe_project
+$env:HEADLESS="false"
+$env:TS_NODE_PROJECT="../tsconfig.json"
+npx --prefix .. cucumber-js `
+  "tests/bdd/features/project/project-listing-and-creation.feature" `
+  --require "tests/bdd/support/world.ts" `
+  --require "tests/bdd/support/hooks.ts" `
+  --require "tests/bdd/steps/**/*.ts" `
+  --require "../_hap_fe_auth/tests/bdd/steps/login.steps.ts" `
+  --require-module ts-node/register `
+  --format json:artifacts/cucumber/cucumber.json `
+  --format pretty
+```
+
+> [!IMPORTANT]
+> **_hap_fe_project scenarios start with auth login steps.**
+> Always include `_hap_fe_auth` `login.steps.ts` in the require list.
+> Without it all scenarios show as "undefined".
+
+### NEVER USE:
+- `npm run test:e2e:qa`  ← OLD PIPELINE, runs 0 scenarios
+- `npx cucumber-js --config e2e/cucumber.config.cjs` ← WRONG CONFIG
+
+
