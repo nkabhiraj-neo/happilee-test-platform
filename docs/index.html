@@ -2239,6 +2239,192 @@
                 </div>
               </div>
             )}
+            )}
+
+            {/* Network Failures Panel */}
+            {(() => {
+              const hookEmbeddings = [
+                ...(el.before || []),
+                ...(el.after || [])
+              ].flatMap(h => h.embeddings || [])
+              
+              const networkEmb = hookEmbeddings.find(e => 
+                e.mime_type === 'application/json'
+              )
+              
+              if (!networkEmb) return null
+              
+              let networkData
+              try {
+                networkData = JSON.parse(atob(networkEmb.data))
+              } catch {
+                return null
+              }
+              
+              if (!networkData?.failed_requests?.length) return null
+              
+              return (
+                <div style={{
+                  margin: '16px 0',
+                  borderRadius: '10px',
+                  border: '1px solid #fbbf24',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    padding: '10px 16px',
+                    background: '#fffbeb',
+                    borderBottom: '1px solid #fbbf24',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}>
+                    <span>🌐</span>
+                    <strong style={{fontSize:'13px'}}>
+                      Network Failures ({networkData.failed_requests.length})
+                    </strong>
+                    <span style={{
+                      fontSize:'11px',
+                      color:'#92400e'
+                    }}>
+                      captured during test run
+                    </span>
+                  </div>
+                  <div style={{padding:'12px', background:'#fff'}}>
+                    {networkData.failed_requests.map((req, i) => (
+                      <div key={i} style={{
+                        marginBottom: '12px',
+                        padding: '10px',
+                        background: '#f8fafc',
+                        borderRadius: '8px',
+                        border: `1px solid ${req.status >= 500 ? '#fca5a5' : '#fde68a'}`
+                      }}>
+                        {/* Status + Method + URL */}
+                        <div style={{
+                          display:'flex',
+                          alignItems:'center',
+                          gap:'8px',
+                          marginBottom:'8px',
+                          flexWrap:'wrap'
+                        }}>
+                          <span style={{
+                            padding:'2px 8px',
+                            borderRadius:'4px',
+                            fontSize:'12px',
+                            fontWeight:700,
+                            background: req.status >= 500 ? '#dc2626' : '#d97706',
+                            color:'#fff'
+                          }}>
+                            {req.status || 'ERR'}
+                          </span>
+                          <span style={{
+                            fontSize:'12px',
+                            fontWeight:700,
+                            color:'#374151',
+                            background:'#e5e7eb',
+                            padding:'2px 6px',
+                            borderRadius:'4px'
+                          }}>
+                            {req.method}
+                          </span>
+                          <span style={{
+                            fontSize:'12px',
+                            color:'#1e40af',
+                            wordBreak:'break-all',
+                            flex:1
+                          }}>
+                            {req.url}
+                          </span>
+                        </div>
+
+                        {/* Response body if available */}
+                        {req.responseBody && req.responseBody !== 'Could not read response' && (
+                          <details style={{marginBottom:'8px'}}>
+                            <summary style={{
+                              fontSize:'11px',
+                              color:'#dc2626',
+                              cursor:'pointer',
+                              fontWeight:600
+                            }}>
+                              📄 Response Body
+                            </summary>
+                            <pre style={{
+                              fontSize:'11px',
+                              color:'#7f1d1d',
+                              background:'#fef2f2',
+                              padding:'8px',
+                              borderRadius:'4px',
+                              marginTop:'4px',
+                              whiteSpace:'pre-wrap',
+                              wordBreak:'break-word',
+                              maxHeight:'150px',
+                              overflowY:'auto'
+                            }}>
+                              {(() => {
+                                try {
+                                  return JSON.stringify(JSON.parse(req.responseBody), null, 2)
+                                } catch {
+                                  return req.responseBody
+                                }
+                              })()}
+                            </pre>
+                          </details>
+                        )}
+
+                        {/* Curl command */}
+                        {req.curlCommand && (
+                          <details>
+                            <summary style={{
+                              fontSize:'11px',
+                              color:'#2563eb',
+                              cursor:'pointer',
+                              fontWeight:600
+                            }}>
+                              🔁 Copy as cURL
+                            </summary>
+                            <div style={{position:'relative', marginTop:'4px'}}>
+                              <pre style={{
+                                fontSize:'11px',
+                                color:'#e2e8f0',
+                                background:'#0f172a',
+                                padding:'10px',
+                                borderRadius:'4px',
+                                whiteSpace:'pre-wrap',
+                                wordBreak:'break-word',
+                                margin:0,
+                                paddingRight:'70px'
+                              }}>
+                                {req.curlCommand}
+                              </pre>
+                              <button
+                                onClick={() => {
+                                  navigator.clipboard.writeText(req.curlCommand)
+                                    .then(() => alert('cURL copied to clipboard!'))
+                                }}
+                                style={{
+                                  position:'absolute',
+                                  top:'6px',
+                                  right:'6px',
+                                  padding:'4px 10px',
+                                  background:'#3b82f6',
+                                  color:'#fff',
+                                  border:'none',
+                                  borderRadius:'4px',
+                                  fontSize:'11px',
+                                  cursor:'pointer',
+                                  fontWeight:600
+                                }}
+                              >
+                                Copy
+                              </button>
+                            </div>
+                          </details>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )
+            })()}
 
           </div>}
         </div>
