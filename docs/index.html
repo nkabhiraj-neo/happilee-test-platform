@@ -7,7 +7,7 @@
   <title>Happilee QA — Test Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link
-    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
     rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
@@ -16,8 +16,8 @@
     :root {
       --green: #25D366;
       --green-d: #128C7E;
-      --blue: #1672CC;
-      --navy: #0B3966;
+      --blue: #6366f1;
+      --navy: #1e1b4b;
       --teal: #00C4B4;
       --pass: #16a34a;
       --pass-bg: #dcfce7;
@@ -28,7 +28,7 @@
       --skip: #d97706;
       --skip-bg: #fef3c7;
       --skip-ring: #fcd34d;
-      --font: 'Plus Jakarta Sans', sans-serif;
+      --font: 'Inter', sans-serif;
       --mono: 'JetBrains Mono', monospace;
       --bg: #f0f4f8;
       --surface: #fff;
@@ -695,7 +695,7 @@
     }
 
     .welcome-card {
-      background: linear-gradient(135deg, #eef2ff, #f8fafc);
+      background: linear-gradient(135deg, #eef2ff, #ffffff 40%, #f5f3ff);
       border: 1px solid #c7d2fe;
       border-radius: var(--r);
       padding: 18px 20px;
@@ -719,6 +719,55 @@
       font-size: 13px;
       color: var(--text2);
       line-height: 1.5;
+    }
+
+    .module-spotlight {
+      margin-bottom: 14px;
+      padding: 14px 16px;
+      border-radius: var(--r);
+      border: 1px solid rgba(99, 102, 241, 0.35);
+      background: linear-gradient(140deg, rgba(99, 102, 241, 0.13), rgba(255, 255, 255, 0.85) 50%, rgba(236, 72, 153, 0.08));
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    [data-theme="dark"] .module-spotlight {
+      background: linear-gradient(140deg, rgba(99, 102, 241, 0.25), rgba(15, 23, 42, 0.9) 60%);
+      border-color: rgba(129, 140, 248, 0.5);
+    }
+
+    .spot-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text);
+      letter-spacing: -0.2px;
+    }
+
+    .spot-sub {
+      font-size: 12px;
+      color: var(--text2);
+      margin-top: 3px;
+    }
+
+    .incident-strip {
+      margin: 8px 0 10px;
+      border: 1px solid #fca5a5;
+      background: #fff1f2;
+      border-radius: 8px;
+      padding: 8px 10px;
+    }
+
+    .incident-head {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #b91c1c;
+      margin-bottom: 3px;
     }
 
     .scenario-table-wrap {
@@ -2161,6 +2210,12 @@
         .find(r => (r.status || 0) >= 500) || (networkData?.failed_requests || [])
         .find(r => (r.status || 0) >= 400) || null;
       const hasNetworkFailure = (networkData?.failed_requests || []).length > 0;
+      const requests = networkData?.failed_requests || [];
+      const isFirstParty = (url) => /happilee\.io/i.test(String(url || ''));
+      const critical = requests.filter(r => (r.status || 0) >= 400).sort((a, b) => (b.status || 0) - (a.status || 0));
+      const prioritized = critical.filter(r => (r.status || 0) >= 500 || isFirstParty(r.url));
+      const preview = (prioritized.length ? prioritized : critical).slice(0, 2);
+      const noisy = critical.filter(r => !isFirstParty(r.url));
       const failureMessage = (() => {
         if (!criticalNetworkFailure?.responseBody || criticalNetworkFailure.responseBody === 'Could not read response') return null;
         try {
@@ -2206,21 +2261,37 @@
                 ))}
             </div>
 
-            {criticalNetworkFailure && (
-              <div style={{
-                margin: '10px 0 12px',
-                padding: '10px 12px',
-                borderRadius: '8px',
-                border: '1px solid #fecaca',
-                background: '#fff1f2'
-              }}>
-                <div style={{ fontSize: '11px', fontWeight: 700, color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
-                  Exact API Failure
+            {(criticalNetworkFailure || hasNetworkFailure) && (
+              <div className="incident-strip">
+                <div className="incident-head">Network Incident Summary</div>
+                {criticalNetworkFailure ? (
+                  <div style={{ fontSize: '13px', color: '#7f1d1d', lineHeight: 1.45 }}>
+                    <strong>{criticalNetworkFailure.method} {criticalNetworkFailure.status}</strong> {String(criticalNetworkFailure.url || '').slice(0, 130)}
+                    {failureMessage && <div style={{ marginTop: 4 }}>Response: <code>{failureMessage}</code></div>}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: '13px', color: '#7f1d1d' }}>Network failures captured: {requests.length}</div>
+                )}
+                <div style={{ marginTop: 8, display: 'flex', gap: 8, flexWrap: 'wrap', fontSize: 11 }}>
+                  <span style={{ color: '#475569', background: '#f1f5f9', padding: '3px 8px', borderRadius: 999 }}>Total: {requests.length}</span>
+                  <span style={{ color: '#b91c1c', background: '#fee2e2', padding: '3px 8px', borderRadius: 999 }}>5xx: {requests.filter(r => (r.status || 0) >= 500).length}</span>
+                  <span style={{ color: '#b45309', background: '#fef3c7', padding: '3px 8px', borderRadius: 999 }}>4xx: {requests.filter(r => (r.status || 0) >= 400 && (r.status || 0) < 500).length}</span>
+                  <span style={{ color: '#64748b', background: '#e2e8f0', padding: '3px 8px', borderRadius: 999 }}>Third-party noisy: {noisy.length}</span>
                 </div>
-                <div style={{ fontSize: '13px', color: '#7f1d1d', lineHeight: 1.45 }}>
-                  <strong>{criticalNetworkFailure.method} {criticalNetworkFailure.status}</strong> {String(criticalNetworkFailure.url || '').slice(0, 130)}
-                  {failureMessage && <div style={{ marginTop: 4 }}>Response: <code>{failureMessage}</code></div>}
-                </div>
+                {preview.length > 0 && (
+                  <details style={{ marginTop: 8 }}>
+                    <summary style={{ cursor: 'pointer', fontSize: 12, fontWeight: 700, color: '#334155' }}>Show top critical failures</summary>
+                    <div style={{ marginTop: 6 }}>
+                      {preview.map((req, i) => (
+                        <div key={i} style={{ padding: '5px 0', borderBottom: '1px solid #f1f5f9', fontSize: 11, display: 'flex', gap: 7, alignItems: 'center' }}>
+                          <span style={{ minWidth: 44, textAlign: 'center', padding: '2px 6px', borderRadius: 4, background: (req.status || 0) >= 500 ? '#dc2626' : '#d97706', color: '#fff', fontWeight: 700 }}>{req.status || 'ERR'}</span>
+                          <span style={{ minWidth: 45, fontWeight: 700, color: '#334155' }}>{req.method}</span>
+                          <span style={{ color: '#475569', wordBreak: 'break-all' }}>{String(req.url || '').slice(0, 120)}{String(req.url || '').length > 120 ? '...' : ''}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
               </div>
             )}
 
@@ -2431,7 +2502,7 @@
             )}
 
             {/* Network Failures Panel */}
-            {(() => {
+            {false && (() => {
               const hookEmbeddings = [
                 ...(el.before || []),
                 ...(el.after || []),
@@ -3084,6 +3155,24 @@
 
             {features && st && (<>
               {notificationBanner && <div className={`notif-banner ${notificationBanner.type}`}>{notificationBanner.msg}</div>}
+              <div className="module-spotlight afu">
+                <div>
+                  <div className="spot-title">{MODULE_META[selectedBlock]?.label} Intelligence Overview</div>
+                  <div className="spot-sub">
+                    First-time friendly view: start with scenario table, then click one row for full AI + evidence diagnosis.
+                  </div>
+                </div>
+                <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
+                  <span style={{fontSize:'11px', padding:'4px 10px', borderRadius:'999px', background:'#eef2ff', color:'#4338ca', fontWeight:700}}>
+                    Module: {MODULE_META[selectedBlock]?.label}
+                  </span>
+                  {curEntry && (
+                    <span style={{fontSize:'11px', padding:'4px 10px', borderRadius:'999px', background:'#f1f5f9', color:'#334155', fontWeight:700}}>
+                      Active Run {shortRunId(curEntry.id)}
+                    </span>
+                  )}
+                </div>
+              </div>
               <div className="hero">
                 <div className="metrics">
                   {[
