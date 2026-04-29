@@ -694,6 +694,83 @@
       gap: 6px;
     }
 
+    .welcome-card {
+      background: linear-gradient(135deg, #eef2ff, #f8fafc);
+      border: 1px solid #c7d2fe;
+      border-radius: var(--r);
+      padding: 18px 20px;
+      margin-bottom: 14px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    [data-theme="dark"] .welcome-card {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.16), rgba(15, 23, 42, 0.5));
+      border-color: rgba(129, 140, 248, 0.45);
+    }
+
+    .welcome-title {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .welcome-sub {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.5;
+    }
+
+    .scenario-table-wrap {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 14px;
+    }
+
+    .scenario-table-head,
+    .scenario-table-row {
+      display: grid;
+      grid-template-columns: 100px 1.8fr 90px 90px 1.2fr;
+      gap: 10px;
+      align-items: center;
+      padding: 10px 14px;
+    }
+
+    .scenario-table-head {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+
+    .scenario-table-row {
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      transition: background .15s;
+      font-size: 12px;
+      color: var(--text2);
+    }
+
+    .scenario-table-row:last-child {
+      border-bottom: none;
+    }
+
+    .scenario-table-row:hover {
+      background: var(--surface2);
+    }
+
+    .scenario-table-row.active {
+      background: rgba(99, 102, 241, 0.1);
+      border-left: 3px solid #6366f1;
+      padding-left: 11px;
+    }
+
     .fchip {
       padding: 6px 14px;
       border-radius: 20px;
@@ -2129,6 +2206,24 @@
                 ))}
             </div>
 
+            {criticalNetworkFailure && (
+              <div style={{
+                margin: '10px 0 12px',
+                padding: '10px 12px',
+                borderRadius: '8px',
+                border: '1px solid #fecaca',
+                background: '#fff1f2'
+              }}>
+                <div style={{ fontSize: '11px', fontWeight: 700, color: '#b91c1c', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
+                  Exact API Failure
+                </div>
+                <div style={{ fontSize: '13px', color: '#7f1d1d', lineHeight: 1.45 }}>
+                  <strong>{criticalNetworkFailure.method} {criticalNetworkFailure.status}</strong> {String(criticalNetworkFailure.url || '').slice(0, 130)}
+                  {failureMessage && <div style={{ marginTop: 4 }}>Response: <code>{failureMessage}</code></div>}
+                </div>
+              </div>
+            )}
+
             {/* AI Failure Analysis panel — always before steps */}
             {el.aiAnalysis && (
               <div style={{
@@ -2360,6 +2455,12 @@
               }
               
               if (!networkData?.failed_requests?.length) return null
+              const requests = networkData.failed_requests || []
+              const isFirstParty = (url) => /happilee\.io/i.test(String(url || ''))
+              const critical = requests.filter(r => (r.status || 0) >= 400).sort((a, b) => (b.status || 0) - (a.status || 0))
+              const prioritized = critical.filter(r => (r.status || 0) >= 500 || isFirstParty(r.url))
+              const preview = (prioritized.length ? prioritized : critical).slice(0, 2)
+              const noisy = critical.filter(r => !isFirstParty(r.url))
               
               return (
                 <div style={{
@@ -2388,7 +2489,31 @@
                     </span>
                   </div>
                   <div style={{padding:'12px', background:'#fff'}}>
-                    {networkData.failed_requests.map((req, i) => (
+                    <div style={{
+                      marginBottom: '10px',
+                      display: 'flex',
+                      gap: '8px',
+                      flexWrap: 'wrap',
+                      alignItems: 'center'
+                    }}>
+                      <span style={{ fontSize: '11px', color: '#475569', background: '#f1f5f9', padding: '3px 8px', borderRadius: '999px' }}>
+                        Total: {requests.length}
+                      </span>
+                      <span style={{ fontSize: '11px', color: '#b91c1c', background: '#fee2e2', padding: '3px 8px', borderRadius: '999px' }}>
+                        5xx: {requests.filter(r => (r.status || 0) >= 500).length}
+                      </span>
+                      <span style={{ fontSize: '11px', color: '#b45309', background: '#fef3c7', padding: '3px 8px', borderRadius: '999px' }}>
+                        4xx: {requests.filter(r => (r.status || 0) >= 400 && (r.status || 0) < 500).length}
+                      </span>
+                      <span style={{ fontSize: '11px', color: '#64748b', background: '#e2e8f0', padding: '3px 8px', borderRadius: '999px' }}>
+                        Third-party noisy: {noisy.length}
+                      </span>
+                    </div>
+
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                      Top Critical Failures
+                    </div>
+                    {preview.map((req, i) => (
                       <div key={i} style={{
                         marginBottom: '12px',
                         padding: '10px',
@@ -2430,7 +2555,7 @@
                             wordBreak:'break-all',
                             flex:1
                           }}>
-                            {req.url}
+                            {String(req.url || '').length > 140 ? `${String(req.url).slice(0, 140)}...` : req.url}
                           </span>
                         </div>
 
@@ -2524,6 +2649,42 @@
                         )}
                       </div>
                     ))}
+
+                    <details>
+                      <summary style={{
+                        fontSize:'12px',
+                        fontWeight:700,
+                        color:'#475569',
+                        cursor:'pointer',
+                        marginTop:'6px'
+                      }}>
+                        Show all network failures ({requests.length})
+                      </summary>
+                      <div style={{ marginTop: '8px' }}>
+                        {requests.map((req, i) => (
+                          <div key={`all-${i}`} style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '6px 4px',
+                            borderBottom: '1px solid #f1f5f9',
+                            fontSize: '11px'
+                          }}>
+                            <span style={{
+                              padding: '2px 6px',
+                              borderRadius: '4px',
+                              background: (req.status || 0) >= 500 ? '#dc2626' : (req.status || 0) >= 400 ? '#d97706' : '#64748b',
+                              color: '#fff',
+                              fontWeight: 700,
+                              minWidth: '44px',
+                              textAlign: 'center'
+                            }}>{req.status || 'ERR'}</span>
+                            <span style={{ fontWeight: 700, color: '#334155', minWidth: '48px' }}>{req.method}</span>
+                            <span style={{ color: '#475569', wordBreak: 'break-all', flex: 1 }}>{req.url}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </details>
                   </div>
                 </div>
               )
@@ -2715,6 +2876,7 @@
       const [flashCards, setFlashCards] = useState(false);
       const [videoIndex, setVideoIndex] = useState({});
       const [runMeta, setRunMeta] = useState(null);
+      const [selectedScenarioId, setSelectedScenarioId] = useState(null);
       const prevStats = useRef(null);
 
       useEffect(() => {
@@ -2763,6 +2925,7 @@
               failedScenarios: newSt.failed,
               totalScenarios: newSt.total
             });
+            setSelectedScenarioId(null);
             setFilter('all');
             setLastLoadedAt(meta ? new Date(meta.generatedAt).getTime() : Date.now());
             loadRunHistory();
@@ -2794,6 +2957,7 @@
               setFileName(`${selectedBlock}.json`);
               setActiveId(run.id);
               setRunMeta(run);
+              setSelectedScenarioId(null);
               setFilter('all');
               setLastLoadedAt(new Date(run.timestamp).getTime());
             }
@@ -2814,6 +2978,31 @@
       const curEntry = history.find(h => Number(h.id) === Number(activeId)) || runMeta;
 
       const totalSteps = features ? (features.flatMap(f => f.elements || []).flatMap(e => e.steps || []).filter(s => !s.hidden)).length : 0;
+      const scenarioRows = useMemo(() => {
+        if (!features) return [];
+        return features.flatMap(feature =>
+          (feature.elements || [])
+            .filter(el => filter === 'all' || scenSt(el) === filter)
+            .map((el, idx) => {
+              const scenarioTag = (el.tags || []).map(t => t.name.replace('@', '')).find(t => t.startsWith('MLR-')) || '-';
+              const rowId = `${feature.uri || feature.name}-${idx}-${el.name}`;
+              const durationNs = (el.steps || []).filter(s => !s.hidden).reduce((sum, s) => sum + (s.result?.duration || 0), 0);
+              return {
+                id: rowId,
+                feature,
+                el,
+                status: scenSt(el),
+                tag: scenarioTag,
+                durationNs
+              };
+            })
+        ).sort((a, b) => {
+          if (a.status === 'failed' && b.status !== 'failed') return -1;
+          if (a.status !== 'failed' && b.status === 'failed') return 1;
+          return 0;
+        });
+      }, [features, filter]);
+      const selectedRow = scenarioRows.find(r => r.id === selectedScenarioId) || null;
 
       return (
         <div onDragOver={e => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={onDrop}>
@@ -2946,8 +3135,46 @@
                   ))}
                 </div>
               </div>
+              <div className="welcome-card afu4">
+                <div className="welcome-title">Welcome to Happilee QA Intelligence</div>
+                <div className="welcome-sub">
+                  Select any scenario from the table to inspect AI diagnosis, step evidence, screenshots, videos, and API/network failures for that specific test.
+                </div>
+              </div>
 
-              {features.map((f, i) => <Feature key={i} feature={f} filter={filter} videoIndex={videoIndex} />)}
+              <div className="scenario-table-wrap">
+                <div className="scenario-table-head">
+                  <span>Status</span>
+                  <span>Scenario</span>
+                  <span>MLR</span>
+                  <span>Duration</span>
+                  <span>Feature</span>
+                </div>
+                {scenarioRows.map(row => (
+                  <div
+                    key={row.id}
+                    className={`scenario-table-row ${selectedScenarioId === row.id ? 'active' : ''}`}
+                    onClick={() => setSelectedScenarioId(row.id)}
+                  >
+                    <span style={{ color: row.status === 'failed' ? 'var(--fail)' : row.status === 'passed' ? 'var(--pass)' : 'var(--skip)', fontWeight: 700 }}>
+                      {row.status === 'failed' ? '✕ Failed' : row.status === 'passed' ? '✓ Passed' : '− Skipped'}
+                    </span>
+                    <span style={{ color: 'var(--text)', fontWeight: 600 }}>{row.el.name}</span>
+                    <span style={{ fontFamily: 'var(--mono)', color: 'var(--blue)' }}>{row.tag}</span>
+                    <span style={{ fontFamily: 'var(--mono)' }}>{ns2s(row.durationNs)}</span>
+                    <span style={{ color: 'var(--text3)', fontFamily: 'var(--mono)' }}>{(row.feature.uri || '').replace(/\\/g, '/').split('/').pop()}</span>
+                  </div>
+                ))}
+              </div>
+
+              {!selectedRow ? (
+                <div className="dropzone" style={{ marginTop: 14, padding: '34px 24px', cursor: 'default' }}>
+                  <div className="dtitle" style={{ fontSize: 20, marginBottom: 6 }}>Select a test to view details</div>
+                  <div className="ddesc" style={{ marginBottom: 0 }}>Click any scenario row above to open AI analysis, step trace, media, and network diagnostics.</div>
+                </div>
+              ) : (
+                <Feature feature={{ ...selectedRow.feature, elements: [selectedRow.el] }} filter="all" videoIndex={videoIndex} />
+              )}
 
               {history.length > 0 && (
                 <div style={{ marginTop: 40 }} className="afu">
@@ -2966,6 +3193,7 @@
                             setFileName(`${selectedBlock}.json`);
                             setActiveId(e.id);
                             setRunMeta(e);
+                          setSelectedScenarioId(null);
                             setFilter('all');
                             setLastLoadedAt(new Date(e.timestamp).getTime());
                           }
@@ -2990,6 +3218,7 @@
                           setFileName(`${selectedBlock}.json`);
                           setActiveId(e.id);
                           setRunMeta(e);
+                          setSelectedScenarioId(null);
                           setLastLoadedAt(new Date(e.timestamp).getTime());
                         }
                       });
