@@ -6,6 +6,8 @@
 
 It runs Cucumber/Playwright tests, captures rich failure evidence, generates a static dashboard, adds AI analysis, and can create Jira/GitHub tickets from failures.
 
+This platform is designed to support ANY project/module over time (not tied to one feature area).
+
 ---
 
 ## 2) Why this exists
@@ -14,6 +16,7 @@ The goal is to convert a failing test into an actionable engineering item quickl
 - exact failed step
 - real UI error shown to user
 - screenshots + run video
+- failed API evidence (status, URL, response, cURL)
 - root-cause suggestions
 - ticket-ready context for Jira/GitHub
 
@@ -22,7 +25,7 @@ The goal is to convert a failing test into an actionable engineering item quickl
 ## 3) Repos and workspace layout
 
 - Automation workspace: `c:\happilee-test-platform`
-- App under test clone: `c:\happilee-test-platform\codebase\happilee_ops_frontend`
+- Active app/test modules: `c:\happilee-test-platform\codebase\_hap_fe_*`
 
 Why this split:
 - keep automation scripts stable
@@ -34,35 +37,35 @@ Why this split:
 ## 4) Current core stack
 
 - Test runner: Cucumber + Playwright
-- Test code: TypeScript (`e2e/features`, `e2e/steps`, `e2e/support`)
-- Orchestration: `e2e/scripts/run-e2e-with-report.mjs`
+- Test code: TypeScript in module-local paths (`codebase/_hap_fe_*/tests/bdd/**`)
+- Orchestration: module cucumber commands + `e2e/scripts/post-run-sync.mjs`
 - Failure processing + ticketing: `e2e/scripts/post-e2e-failures.mjs`
 - AI analysis: `e2e/scripts/ai-analyze-failure.mjs` + `@anthropic-ai/sdk`
-- Dashboard output: `e2e/reports/dashboard.html` served on `localhost:4000`
+- Dashboard output: `docs/index.html` + `docs/reports/**` (GitHub Pages)
 
 ---
 
 ## 5) End-to-end runtime flow (latest)
 
-1. **Pre-run cleanup** in `run-e2e-with-report.mjs`:
+1. **Pre-run cleanup**:
    - clears `e2e/reports/screenshots/steps/`
    - clears `e2e/reports/videos/`
    - clears `e2e/reports/failures/last-run/`
 
 2. **Test execution**:
-   - `npm run test:e2e:qa`
-   - `E2E_RECORD_FULL_RUN=1` records one full-run video
-   - `failFast: true` in `e2e/cucumber.config.cjs` stops remaining steps after first failure in scenario flow
+   - run module-specific cucumber command (`codebase/_hap_fe_*/tests/bdd/...`)
+   - include cross-module `--require` paths when scenarios depend on shared/auth steps
+   - record scenario videos/screenshots from hooks
 
 3. **Failure capture**:
    - scenario failure screenshot + JSON + NDJSON entry in `e2e/reports/failures/last-run/`
-   - login flow now throws clear error if still on `/login`
-   - login flow captures visible UI error before throw (for real diagnostic message)
+   - network failures captured from hooks (`4xx`, `5xx`, `requestfailed`)
+   - cURL and response body captured for failed API calls
 
 4. **AI analysis**:
    - `.env` key loaded (`ANTHROPIC_API_KEY`)
    - model: `claude-sonnet-4-5`
-   - prompt includes scenario, failed step, terminal error, visible UI error, existing suggestions
+   - prompt includes scenario, failed step, terminal error, screenshot and network/API failure context
    - logs:
      - `Calling Claude API...`
      - `Claude response received`
@@ -72,6 +75,13 @@ Why this split:
    - writes `E2E-FAILURE-REPORT.md`
    - writes `failures/last-run/summary.json`
    - writes static `dashboard.html`
+
+6. **Failure triage standard** (when any scenario fails):
+   - identify exact failed step and file location
+   - report expected result vs actual result
+   - confirm screenshot + video evidence
+   - extract exact API failure from network capture
+   - include AI root cause + concrete fix direction
 
 ---
 
@@ -97,14 +107,20 @@ Dashboard now strips `e2e/reports/` so browser path resolves as:
 
 This fixed the “failure screenshot not displaying” issue.
 
+### Failure diagnostics paneling
+- Dashboard shows AI panel and network panel for failed scenarios.
+- Network panel includes failed requests with method/status/url, response body preview, and cURL copy action.
+- AI panel should highlight exact API failure when available (e.g. request field mismatch).
+
 ---
 
 ## 7) Hooks and capture rules (latest)
 
-In `e2e/support/hooks.ts`:
+In module hooks (`codebase/_hap_fe_*/tests/bdd/support/hooks.ts`):
 - step-level screenshots are captured **only for passed steps**
 - failed-step screenshot is handled by failure capture artifact (single source of truth)
 - avoids stale screenshot confusion on dashboard
+- failed network/API requests are captured and attached as JSON embeddings for post-run AI and dashboard rendering
 
 ---
 
@@ -140,12 +156,12 @@ Both ticket bodies include failure context, and full run video path where availa
 
 ## 10) Commands currently used most
 
-- Run QA flow and regenerate all artifacts:
-  - `npm run test:e2e:qa`
-- Start dashboard:
-  - `npm run qa:dashboard`
+- Run module test:
+  - `_hap_fe_project` / `_hap_fe_auth` cucumber commands from `AGENT.md`
+- Sync dashboard artifacts:
+  - `node e2e/scripts/post-run-sync.mjs`
 - Open dashboard:
-  - `http://localhost:4000/dashboard`
+  - `https://nkabhiraj-neo.github.io/happilee-test-platform/`
 
 ---
 
@@ -175,7 +191,7 @@ Both ticket bodies include failure context, and full run video path where availa
 
 ## 13) Practical end-to-end summary
 
-Clone/setup -> run QA script -> auto-clean old artifacts -> execute tests with fail-fast -> capture real failure evidence -> run Claude analysis -> generate static dashboard/report -> optionally create Jira/GitHub tickets -> review at `localhost:4000/dashboard`.
+Read existing module tests first -> run targeted suite from current `codebase/_hap_fe_*` -> auto-clean old artifacts -> capture step/screenshot/video/network evidence -> run Claude analysis with network context -> sync to dashboard -> optionally create Jira/GitHub tickets -> review at `https://nkabhiraj-neo.github.io/happilee-test-platform/`.
 
 ---
 
@@ -185,13 +201,16 @@ Auto-triggers in `post-run-sync.mjs` when any scenario fails.
 Uses Claude (`claude-sonnet-4-20250514`) via Anthropic API.
 
 ### How it works
-1. `post-run-sync.mjs` reads `qa-dashboard/reports/_hap_fe_auth.json` after sync
+1. `post-run-sync.mjs` reads `docs/reports/_hap_fe_*.json` after sync
 2. For each failed scenario: sends scenario name, MLR tag, failed step, error message, screenshot (base64) to Claude
 3. Claude returns structured JSON: `type`, `confidence`, `severity`, `headline`, `what_happened`, `root_cause`, `where_to_look`, `how_to_fix`, `code_hint`, `prevention`, `ticket_worthy`, `ticket_title`, `ticket_body`
 4. Analysis injected into `_hap_fe_auth.json` as `scenario.aiAnalysis`
 5. Terminal prints full analysis
 6. Asks: "Create Jira + GitHub tickets? (yes/no)"
 7. Dashboard reads `el.aiAnalysis` and renders the AI panel automatically
+
+AI prompt quality requirement:
+- Include failed network context (top critical API failures with response snippet and cURL) so analysis can output exact root cause and actionable fix.
 
 ### Known analysis results
 - MLR-203 CAPTCHA failure → **ENVIRONMENT_ISSUE** (HIGH confidence)

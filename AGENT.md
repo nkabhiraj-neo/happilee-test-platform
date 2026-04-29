@@ -1,8 +1,32 @@
 # Test Monitoring Agent Instructions
 
+## Quick Start (30 seconds)
+1. Clean old artifacts.
+2. Run the correct module test command.
+3. Run `node e2e/scripts/post-run-sync.mjs` (always).
+4. If failure: report failed step + expected vs actual + screenshot/video + exact API failure.
+5. Ask user before creating Jira/GitHub tickets.
+
 ## Your job
 You are a test monitoring agent for the Happilee test platform.
 Before doing ANYTHING, read this file completely.
+
+## Product direction (always true)
+- This is a reusable testing platform for ANY project/module, not only auth.
+- Always prefer existing tests in `codebase/*/tests` before writing new ones.
+- For a requested feature, first read current test files + related support/page files, then extend or run the right suite.
+
+## Core operating flow (every run)
+1. Clean old artifacts.
+2. Run target tests.
+3. Always run `node e2e/scripts/post-run-sync.mjs` (pass or fail).
+4. If failed, explain exactly why with:
+   - failed step + location
+   - expected vs actual result
+   - screenshot and video evidence
+   - network/API failures (status, URL, response, cURL)
+   - AI root cause and fix suggestion
+5. Ask user before creating Jira/GitHub tickets.
 
 ## Step 1 — Clean before every run
 Delete contents of:
@@ -24,43 +48,21 @@ Before writing ANY test, always do this:
 - If it exists -> read it and use it directly, skip codebase reading
 - If it does not exist -> read the codebase and CREATE it
 
-### 2. If knowledge file does not exist, read codebase in this order:
+### 2. If knowledge file does not exist, read current codebase in this order:
 
-For AUTH related tests:
-- codebase/happilee_ops_frontend/src/pages/Login.tsx
-- codebase/happilee_ops_frontend/src/api/auth.ts
-- codebase/happilee_ops_frontend/src/context/AuthContext.tsx
+For requested module in current workspace (`codebase/_hap_fe_*`):
+- `codebase/<module>/tests/bdd/features/**` (what behavior is already covered)
+- `codebase/<module>/tests/bdd/steps/**` (step implementation and assertions)
+- `codebase/<module>/tests/bdd/pages/**` and `tests/bdd/support/**` (selectors, helpers, hooks, world)
+- `codebase/<module>/src/**` (actual UI/API flow under test)
 
-For DASHBOARD related tests:
-- codebase/happilee_ops_frontend/src/pages/Dashboard.tsx
-- codebase/happilee_ops_frontend/src/pages/dashboards/AdminDashboard.tsx
+For cross-module dependencies:
+- check whether steps/hooks are reused from another module (example: auth login steps required by project tests)
+- include required shared steps/support files in cucumber `--require` list
 
-For LEADS related tests:
-- codebase/happilee_ops_frontend/src/pages/Leads.tsx
-- codebase/happilee_ops_frontend/src/api/leads.ts
-- codebase/happilee_ops_frontend/src/stores/useLeadFiltersStore.ts
-
-For CLIENTS related tests:
-- codebase/happilee_ops_frontend/src/pages/Clients.tsx
-- codebase/happilee_ops_frontend/src/api/clients.ts
-
-For INVOICES related tests:
-- codebase/happilee_ops_frontend/src/pages/Invoices.tsx
-- codebase/happilee_ops_frontend/src/api/invoices.ts
-
-For ASSIGNMENTS related tests:
-- codebase/happilee_ops_frontend/src/pages/Assignments.tsx
-
-For ACCESS CONTROL related tests:
-- codebase/happilee_ops_frontend/src/pages/AccessControl.tsx
-
-For PERFORMANCE related tests:
-- codebase/happilee_ops_frontend/src/pages/UserPerformance.tsx
-
-For ANY feature - also always check:
-- codebase/happilee_ops_frontend/src/components/ for UI components
-- codebase/happilee_ops_frontend/src/api/ for API endpoints
-- codebase/happilee_ops_frontend/src/stores/ for filter/state logic
+For ANY feature:
+- prefer existing module tests first; do not assume old monolith paths
+- only create new tests if the scenario is not already covered
 
 ### 3. After reading codebase, create knowledge file
 Save to knowledge/flows/[feature-name].md with:
@@ -81,10 +83,10 @@ Save to knowledge/flows/[feature-name].md with:
 Never guess selectors. Always read from knowledge file or codebase first.
 
 ## Step 3 — Run the test
-Run: npm run test:e2e:qa
-This command runs the full _hap_fe_auth BDD suite (MLR-201 to MLR-209) and then runs post-run-sync.mjs to push results to the dashboard.
-Watch the terminal output carefully.
-Do not stop watching until the run completes.
+Run the correct command for the requested module (see "CORRECT TEST COMMANDS" below).
+Watch the terminal output carefully and do not stop until run completion.
+After test completion (pass or fail), always run:
+- `node e2e/scripts/post-run-sync.mjs`
 
 ## Current test status (as of April 26, 2026)
 
@@ -117,19 +119,21 @@ After the run, check the terminal for:
 ## Step 5 — Decision making
 
 ### If ALL scenarios PASSED:
-- Run: npm run test:e2e:report
-- Run: npm run qa:dashboard
+- Run: `node e2e/scripts/post-run-sync.mjs`
 - Report in chat: "All tests passed. Dashboard updated. No tickets created."
 - Stop here. Do NOT create any tickets.
 
 ### If ANY scenario FAILED:
-- Take a screenshot of the failure state
-- Read the failure details from e2e/reports/failures/last-run/failures.ndjson
-- Ask in chat ONCE: "I found a failure in [scenario name]. Error: [exact error]. Should I create tickets in Jira and GitHub?"
+- Run: `node e2e/scripts/post-run-sync.mjs` first (ensures dashboard + AI analysis are updated)
+- Read failure details from `e2e/reports/failures/last-run/failures.ndjson`
+- Extract and report:
+  - exact failed step + file location
+  - expected result vs actual result
+  - exact API failure (method/status/url/response), if present
+  - screenshot and video references
+- Ask in chat ONCE: "I found a failure in [scenario name]. Should I create tickets in Jira and GitHub?"
 - Wait for user response before creating tickets
 - If user says yes → run: cross-env E2E_JIRA_CREATE=1 E2E_GITHUB_CREATE=1 node e2e/scripts/post-e2e-failures.mjs
-- Run: npm run test:e2e:report
-- Run: npm run qa:dashboard
 - Report exactly what tickets were created with links
 
 ## Step 6 — Dashboard must always show
@@ -229,6 +233,13 @@ Dashboard URL: https://nkabhiraj-neo.github.io/happilee-test-platform/
 - Injects `aiAnalysis` into scenario JSON.
 - Dashboard reads it automatically — no extra wiring needed.
 - Model: `claude-sonnet-4-5` (required by this environment).
+- AI prompt must include network evidence when available (failed API status/url/response/cURL) so root cause is exact, not generic.
+
+### Network Failure Evidence (mandatory for failed tests)
+- Monitor failed requests in test hooks (`4xx`, `5xx`, and `requestfailed`).
+- Attach network failures as JSON embedding to cucumber output.
+- Dashboard must show network panel with method, status, URL, response body, and cURL copy action.
+- Ticket text should include the exact API failure and expected vs actual behavior.
 
 ### New Microfrontend Checklist
 When adding any new `_hap_fe_*` module, always do ALL of these:

@@ -1861,11 +1861,18 @@
     const stats = fs => { const allScenarios = (fs || []).flatMap(ft => ft.elements || []); let p = 0, f = 0, sk = 0; allScenarios.forEach(el => { const status = scenSt(el); if (status === 'passed') p++; else if (status === 'failed') f++; else if (status === 'skipped') sk++; }); return { passed: p, failed: f, skipped: sk, total: allScenarios.length }; };
     const b64t = s => { try { return atob(s); } catch { return s; } };
     const fmtD = ts => new Date(ts).toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+    const shortRunId = id => `#${String(id).slice(-4)}`;
+    const fmtRunDate = ts => new Date(ts).toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+    const fmtRunDateShort = ts => new Date(ts).toLocaleString('en-GB', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true });
+    const runLabel = (entry, moduleId) => `Run ${shortRunId(entry.id)} • ${fmtRunDateShort(entry.timestamp)} • ${(MODULE_META[moduleId]?.technical || moduleId)} • ${entry.passedScenarios || 0}✓ ${entry.failedScenarios || 0}✗`;
+    const normalizePath = raw => String(raw || '').replace(/^.*codebase[\\\/]/, 'codebase/').replace(/\\/g, '/');
     const tclass = t => { const v = t.toLowerCase(); if (/@[a-z]+-\d+/.test(v) || /@prj|@mlr/.test(v)) return 'req'; if (v === '@regression') return 'reg'; if (v === '@smoke') return 'smk'; if (v.startsWith('@project') || v.startsWith('@auth')) return 'prj'; return ''; };
 
-    const BLOCKS = [{ id: '_hap_fe_project', label: '_hap_fe_project', url: './reports/_hap_fe_project.json' }, { id: '_hap_fe_auth', label: '_hap_fe_auth', url: './reports/_hap_fe_auth.json' }]; const getKey = b => `hq_runs_${b}_v2`;
-    const loadH = block => { try { return JSON.parse(localStorage.getItem(getKey(block)) || '[]'); } catch { return []; } };
-    const saveR = (block, fs, nm) => { const h = loadH(block); const e = { id: Date.now(), name: nm || 'cucumber-report.json', ts: Date.now(), stats: stats(fs), dur: totalNs(fs), features: fs }; h.unshift(e); if (h.length > 10) h.splice(10); try { localStorage.setItem(getKey(block), JSON.stringify(h)); } catch { } return h; };
+    const MODULE_META = {
+      _hap_fe_auth: { label: 'Auth', technical: '_hap_fe_auth' },
+      _hap_fe_project: { label: 'Project', technical: '_hap_fe_project' }
+    };
+    const BLOCKS = [{ id: '_hap_fe_project', label: MODULE_META._hap_fe_project.label, url: './reports/_hap_fe_project.json' }, { id: '_hap_fe_auth', label: MODULE_META._hap_fe_auth.label, url: './reports/_hap_fe_auth.json' }];
 
     function Donut({ passed, failed, skipped, total }) {
       const R = 44, C = 276.5;
@@ -1899,6 +1906,13 @@
       if (step.hidden) return null;
       const st = step.result?.status || 'skipped';
       const icon = st === 'passed' ? '✓' : st === 'failed' ? '✕' : '–';
+      const stackPaths = st === 'failed' && step.result?.error_message
+        ? step.result.error_message
+          .split('\n')
+          .filter(line => line.includes('codebase'))
+          .map(line => normalizePath(line.trim()))
+          .slice(0, 4)
+        : [];
       
       const embs = step.embeddings || [];
       return (
@@ -1942,6 +1956,20 @@
                       }}>
                         Show technical details
                       </summary>
+                      {stackPaths.length > 0 && (
+                        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
+                          {stackPaths.map((p, pi) => (
+                            <span key={pi} style={{
+                              fontFamily: 'var(--mono)',
+                              fontSize: '10px',
+                              background: '#e2e8f0',
+                              color: '#334155',
+                              borderRadius: '4px',
+                              padding: '3px 6px'
+                            }}>{p}</span>
+                          ))}
+                        </div>
+                      )}
                       <pre style={{
                         fontSize: '11px',
                         color: '#7f1d1d',
@@ -2015,7 +2043,7 @@
       );
     }
 
-    function Scenario({ el, autoOpen, videoIndex = {} }) {
+    function Scenario({ el, autoOpen, videoIndex = {}, featureUri = '' }) {
       const [open, setOpen] = useState(autoOpen || false);
       const st = scenSt(el);
       const tags = (el.tags || []).map(t => t.name);
@@ -2025,6 +2053,7 @@
       const stepsFailed = visibleSteps.filter(s => s.result?.status === 'failed').length;
       const stepsSkipped = visibleSteps.filter(s => s.result?.status === 'skipped').length;
       const dur = steps.reduce((a, s) => a + (s.result?.duration || 0), 0);
+      const hasRealBug = el.aiAnalysis?.type === 'REAL_BUG';
 
       // Collect all scenario-level screenshots from before/after hooks
       const scenarioScreenshots = [
@@ -2043,15 +2072,18 @@
       const networkEmb = [...(el.before || []), ...(el.after || []), ...(el.steps || [])]
         .flatMap(h => h.embeddings || [])
         .find(e => e.mime_type === 'application/json');
-      let networkData = null;
-      try {
-        networkData = networkEmb ? JSON.parse(atob(networkEmb.data)) : null;
-      } catch {
-        networkData = null;
+      let networkData = el.networkFailures?.length ? { failed_requests: el.networkFailures } : null;
+      if (!networkData) {
+        try {
+          networkData = networkEmb ? JSON.parse(atob(networkEmb.data)) : null;
+        } catch {
+          networkData = null;
+        }
       }
       const criticalNetworkFailure = (networkData?.failed_requests || [])
         .find(r => (r.status || 0) >= 500) || (networkData?.failed_requests || [])
         .find(r => (r.status || 0) >= 400) || null;
+      const hasNetworkFailure = (networkData?.failed_requests || []).length > 0;
       const failureMessage = (() => {
         if (!criticalNetworkFailure?.responseBody || criticalNetworkFailure.responseBody === 'Could not read response') return null;
         try {
@@ -2067,6 +2099,8 @@
           <div className="srow" onClick={() => setOpen(o => !o)}>
             <div className={`sbadge ${st}`}><span className="sdot" />{st}</div>
             <div className="sname">{el.name}</div>
+            {hasRealBug && <span title="AI detected REAL_BUG" style={{ fontSize: '13px' }}>🐛</span>}
+            {hasNetworkFailure && <span title="Network failures captured" style={{ fontSize: '13px' }}>🌐</span>}
             <div className="step-count">
               <span className="sc-p">✓ {stepsPassed}</span>
               {stepsFailed > 0 && <span className="sc-f">✕ {stepsFailed}</span>}
@@ -2077,6 +2111,159 @@
             <div className={`chev ${open ? 'op' : ''}`}>▾</div>
           </div>
           {open && <div className="spanel">
+            <div style={{
+              margin: '0 0 10px 0',
+              fontSize: '11px',
+              fontFamily: 'var(--mono)',
+              color: 'var(--text3)',
+              padding: '8px 10px',
+              background: 'var(--surface)',
+              borderRadius: '6px',
+              border: '1px solid var(--border)'
+            }}>
+              {['happilee-test-platform', ...String(featureUri || '').replace(/\\/g, '/').split('/').filter(Boolean)]
+                .map((part, idx, arr) => (
+                  <span key={idx} style={{ fontWeight: idx === arr.length - 1 ? 700 : 500 }}>
+                    {part}{idx < arr.length - 1 ? ' / ' : ''}
+                  </span>
+                ))}
+            </div>
+
+            {/* AI Failure Analysis panel — always before steps */}
+            {el.aiAnalysis && (
+              <div style={{
+                margin: '16px 0',
+                borderRadius: '10px',
+                border: '1px solid #e2e8f0',
+                overflow: 'hidden'
+              }}>
+                {/* Header bar — color based on type */}
+                <div style={{
+                  padding: '10px 16px',
+                  background: el.aiAnalysis.type === 'REAL_BUG' ? '#fef2f2'
+                    : el.aiAnalysis.type === 'ENVIRONMENT_ISSUE' ? '#fffbeb'
+                    : '#eff6ff',
+                  borderBottom: '1px solid #e2e8f0',
+                  display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'
+                }}>
+                  <span style={{fontSize:'16px'}}>🤖</span>
+                  <strong style={{fontSize:'14px'}}>AI Failure Analysis</strong>
+                  <span style={{
+                    padding: '2px 10px', borderRadius: '999px',
+                    fontSize: '11px', fontWeight: 700,
+                    background: el.aiAnalysis.type === 'REAL_BUG' ? '#dc2626'
+                      : el.aiAnalysis.type === 'ENVIRONMENT_ISSUE' ? '#d97706'
+                      : '#2563eb',
+                    color: '#fff'
+                  }}>{el.aiAnalysis.type?.replace(/_/g,' ')}</span>
+                  <span style={{
+                    padding: '2px 10px', borderRadius: '999px',
+                    fontSize: '11px', fontWeight: 600,
+                    background: '#f1f5f9', color: '#475569'
+                  }}>{el.aiAnalysis.severity} severity</span>
+                  <span style={{
+                    padding: '2px 10px', borderRadius: '999px',
+                    fontSize: '11px', background: '#f1f5f9', color: '#475569'
+                  }}>{el.aiAnalysis.confidence} confidence</span>
+                </div>
+
+                {/* Analysis body */}
+                <div style={{padding:'16px', background:'#fff'}}>
+                  {criticalNetworkFailure && (
+                    <div style={{
+                      marginBottom: '14px',
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      border: '1px solid #fecaca',
+                      background: '#fff1f2'
+                    }}>
+                      <div style={{fontSize:'11px', fontWeight:700, color:'#b91c1c', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'4px'}}>
+                        Exact API Failure Detected
+                      </div>
+                      <div style={{fontSize:'13px', color:'#7f1d1d', lineHeight:'1.5'}}>
+                        <strong>{criticalNetworkFailure.method} {criticalNetworkFailure.status}</strong> {criticalNetworkFailure.url}
+                        {failureMessage && (
+                          <div style={{marginTop:'4px'}}>
+                            Response: <code>{failureMessage}</code>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  <div style={{fontSize:'15px', fontWeight:600, color:'#0f172a', marginBottom:'16px'}}>
+                    {el.aiAnalysis.headline}
+                  </div>
+
+                  {[
+                    { label: '📋 What Happened', text: el.aiAnalysis.what_happened || el.aiAnalysis.description },
+                    { label: '🔍 Root Cause', text: el.aiAnalysis.root_cause },
+                    { label: '📁 Where to Look', text: el.aiAnalysis.where_to_look },
+                    { label: '🔧 How to Fix', text: el.aiAnalysis.how_to_fix },
+                    (el.aiAnalysis.code_hint || el.aiAnalysis.code_change_hint) && { label: '💻 Code Hint', text: el.aiAnalysis.code_hint || el.aiAnalysis.code_change_hint },
+                    el.aiAnalysis.api_error_root_cause && { label: '🔌 API Error Root Cause', text: el.aiAnalysis.api_error_root_cause },
+                    { label: '🛡️ Prevention', text: el.aiAnalysis.prevention },
+                  ].filter(section => Boolean(section && section.text)).map((section, i) => (
+                    <div key={i} style={{marginBottom:'12px'}}>
+                      <div style={{
+                        fontSize:'11px', fontWeight:700, color:'#64748b',
+                        textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'4px'
+                      }}>{section.label}</div>
+                      <div style={{
+                        fontSize:'13px', color:'#334155', lineHeight:'1.6',
+                        padding:'8px 12px', background:'#f8fafc',
+                        borderRadius:'6px', borderLeft:'3px solid #e2e8f0',
+                        whiteSpace:'pre-wrap'
+                      }}>{section.text}</div>
+                    </div>
+                  ))}
+
+                  {/* Ticket creation section */}
+                  {el.aiAnalysis.ticket_worthy && (
+                    <div style={{
+                      marginTop:'16px', padding:'12px',
+                      background:'#f0fdf4', borderRadius:'8px', border:'1px solid #bbf7d0'
+                    }}>
+                      <div style={{fontSize:'12px', fontWeight:700, color:'#166534', marginBottom:'8px'}}>
+                        📋 Suggested Ticket
+                      </div>
+                      <div style={{fontSize:'13px', color:'#166534', marginBottom:'10px', fontWeight:500}}>
+                        {el.aiAnalysis.ticket_title}
+                      </div>
+                      <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
+                        <button onClick={() => {
+                          const tag = (el.tags||[]).find(t=>t.name.startsWith('@MLR'))?.name || ''
+                          alert(`To create tickets, run from terminal:\nnode e2e/scripts/post-e2e-failures.mjs\n\nScenario: ${el.name}\nTag: ${tag}`)
+                        }} style={{
+                          padding:'6px 14px', borderRadius:'6px', border:'none',
+                          background:'#0052cc', color:'#fff', fontSize:'12px',
+                          fontWeight:600, cursor:'pointer'
+                        }}>🎫 Create Jira Ticket</button>
+                        <button onClick={() => {
+                          const tag = (el.tags||[]).find(t=>t.name.startsWith('@MLR'))?.name || ''
+                          alert(`To create tickets, run from terminal:\nnode e2e/scripts/post-e2e-failures.mjs\n\nScenario: ${el.name}\nTag: ${tag}`)
+                        }} style={{
+                          padding:'6px 14px', borderRadius:'6px', border:'none',
+                          background:'#24292f', color:'#fff', fontSize:'12px',
+                          fontWeight:600, cursor:'pointer'
+                        }}>🐙 Create GitHub Issue</button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Manual re-analyze button */}
+                  <div style={{marginTop:'12px', textAlign:'right'}}>
+                    <button onClick={async () => {
+                      alert("To re-analyze, run: node e2e/scripts/post-run-sync.mjs\nThe analysis will update automatically on next push.");
+                    }} style={{
+                      padding:'5px 12px', borderRadius:'6px',
+                      border:'1px solid #e2e8f0', background:'#fff',
+                      color:'#64748b', fontSize:'11px', cursor:'pointer'
+                    }}>🔄 Re-analyze</button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <div className="sphdr">Steps · {steps.length} total</div>
             {(el.steps || []).map((s, i) => <Step key={i} step={s} idx={i} el={el} />)}
 
@@ -2148,159 +2335,28 @@
               </div>
             )}
 
-            {/* AI Failure Analysis panel — auto shown when analysis exists */}
-            {el.aiAnalysis && (
-              <div style={{
-                margin: '16px 0',
-                borderRadius: '10px',
-                border: '1px solid #e2e8f0',
-                overflow: 'hidden'
-              }}>
-                {/* Header bar — color based on type */}
-                <div style={{
-                  padding: '10px 16px',
-                  background: el.aiAnalysis.type === 'REAL_BUG' ? '#fef2f2'
-                    : el.aiAnalysis.type === 'ENVIRONMENT_ISSUE' ? '#fffbeb'
-                    : '#eff6ff',
-                  borderBottom: '1px solid #e2e8f0',
-                  display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap'
-                }}>
-                  <span style={{fontSize:'16px'}}>🤖</span>
-                  <strong style={{fontSize:'14px'}}>AI Failure Analysis</strong>
-                  <span style={{
-                    padding: '2px 10px', borderRadius: '999px',
-                    fontSize: '11px', fontWeight: 700,
-                    background: el.aiAnalysis.type === 'REAL_BUG' ? '#dc2626'
-                      : el.aiAnalysis.type === 'ENVIRONMENT_ISSUE' ? '#d97706'
-                      : '#2563eb',
-                    color: '#fff'
-                  }}>{el.aiAnalysis.type?.replace(/_/g,' ')}</span>
-                  <span style={{
-                    padding: '2px 10px', borderRadius: '999px',
-                    fontSize: '11px', fontWeight: 600,
-                    background: '#f1f5f9', color: '#475569'
-                  }}>{el.aiAnalysis.severity} severity</span>
-                  <span style={{
-                    padding: '2px 10px', borderRadius: '999px',
-                    fontSize: '11px', background: '#f1f5f9', color: '#475569'
-                  }}>{el.aiAnalysis.confidence} confidence</span>
-                </div>
-
-                {/* Analysis body */}
-                <div style={{padding:'16px', background:'#fff'}}>
-                  {criticalNetworkFailure && (
-                    <div style={{
-                      marginBottom: '14px',
-                      padding: '10px 12px',
-                      borderRadius: '8px',
-                      border: '1px solid #fecaca',
-                      background: '#fff1f2'
-                    }}>
-                      <div style={{fontSize:'11px', fontWeight:700, color:'#b91c1c', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'4px'}}>
-                        Exact API Failure Detected
-                      </div>
-                      <div style={{fontSize:'13px', color:'#7f1d1d', lineHeight:'1.5'}}>
-                        <strong>{criticalNetworkFailure.method} {criticalNetworkFailure.status}</strong> {criticalNetworkFailure.url}
-                        {failureMessage && (
-                          <div style={{marginTop:'4px'}}>
-                            Response: <code>{failureMessage}</code>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                  <div style={{fontSize:'15px', fontWeight:600, color:'#0f172a', marginBottom:'16px'}}>
-                    {el.aiAnalysis.headline}
-                  </div>
-
-                  {[
-                    { label: '📋 What Happened', text: el.aiAnalysis.what_happened },
-                    { label: '🔍 Root Cause', text: el.aiAnalysis.root_cause },
-                    { label: '📁 Where to Look', text: el.aiAnalysis.where_to_look },
-                    { label: '🔧 How to Fix', text: el.aiAnalysis.how_to_fix },
-                    el.aiAnalysis.code_hint && { label: '💻 Code Hint', text: el.aiAnalysis.code_hint },
-                    { label: '🛡️ Prevention', text: el.aiAnalysis.prevention },
-                  ].filter(Boolean).map((section, i) => (
-                    <div key={i} style={{marginBottom:'12px'}}>
-                      <div style={{
-                        fontSize:'11px', fontWeight:700, color:'#64748b',
-                        textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:'4px'
-                      }}>{section.label}</div>
-                      <div style={{
-                        fontSize:'13px', color:'#334155', lineHeight:'1.6',
-                        padding:'8px 12px', background:'#f8fafc',
-                        borderRadius:'6px', borderLeft:'3px solid #e2e8f0',
-                        whiteSpace:'pre-wrap'
-                      }}>{section.text}</div>
-                    </div>
-                  ))}
-
-                  {/* Ticket creation section */}
-                  {el.aiAnalysis.ticket_worthy && (
-                    <div style={{
-                      marginTop:'16px', padding:'12px',
-                      background:'#f0fdf4', borderRadius:'8px', border:'1px solid #bbf7d0'
-                    }}>
-                      <div style={{fontSize:'12px', fontWeight:700, color:'#166534', marginBottom:'8px'}}>
-                        📋 Suggested Ticket
-                      </div>
-                      <div style={{fontSize:'13px', color:'#166534', marginBottom:'10px', fontWeight:500}}>
-                        {el.aiAnalysis.ticket_title}
-                      </div>
-                      <div style={{display:'flex', gap:'8px', flexWrap:'wrap'}}>
-                        <button onClick={() => {
-                          const tag = (el.tags||[]).find(t=>t.name.startsWith('@MLR'))?.name || ''
-                          alert(`To create tickets, run from terminal:\nnode e2e/scripts/post-e2e-failures.mjs\n\nScenario: ${el.name}\nTag: ${tag}`)
-                        }} style={{
-                          padding:'6px 14px', borderRadius:'6px', border:'none',
-                          background:'#0052cc', color:'#fff', fontSize:'12px',
-                          fontWeight:600, cursor:'pointer'
-                        }}>🎫 Create Jira Ticket</button>
-                        <button onClick={() => {
-                          const tag = (el.tags||[]).find(t=>t.name.startsWith('@MLR'))?.name || ''
-                          alert(`To create tickets, run from terminal:\nnode e2e/scripts/post-e2e-failures.mjs\n\nScenario: ${el.name}\nTag: ${tag}`)
-                        }} style={{
-                          padding:'6px 14px', borderRadius:'6px', border:'none',
-                          background:'#24292f', color:'#fff', fontSize:'12px',
-                          fontWeight:600, cursor:'pointer'
-                        }}>🐙 Create GitHub Issue</button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Manual re-analyze button */}
-                  <div style={{marginTop:'12px', textAlign:'right'}}>
-                    <button onClick={async (event) => {
-                      alert("To re-analyze, run: node e2e/scripts/post-run-sync.mjs\nThe analysis will update automatically on next push.");
-                    }} style={{
-                      padding:'5px 12px', borderRadius:'6px',
-                      border:'1px solid #e2e8f0', background:'#fff',
-                      color:'#64748b', fontSize:'11px', cursor:'pointer'
-                    }}>🔄 Re-analyze</button>
-                  </div>
-                </div>
-              </div>
-            )}
-            )}
-
             {/* Network Failures Panel */}
             {(() => {
               const hookEmbeddings = [
                 ...(el.before || []),
-                ...(el.after || [])
+                ...(el.after || []),
+                ...(el.steps || [])
               ].flatMap(h => h.embeddings || [])
               
               const networkEmb = hookEmbeddings.find(e => 
                 e.mime_type === 'application/json'
               )
               
-              if (!networkEmb) return null
-              
               let networkData
-              try {
-                networkData = JSON.parse(atob(networkEmb.data))
-              } catch {
-                return null
+              if (el.networkFailures?.length) {
+                networkData = { failed_requests: el.networkFailures }
+              } else {
+                if (!networkEmb) return null
+                try {
+                  networkData = JSON.parse(atob(networkEmb.data))
+                } catch {
+                  return null
+                }
               }
               
               if (!networkData?.failed_requests?.length) return null
@@ -2438,9 +2494,14 @@
                                 {req.curlCommand}
                               </pre>
                               <button
-                                onClick={() => {
+                                onClick={(event) => {
+                                  const btn = event.currentTarget;
                                   navigator.clipboard.writeText(req.curlCommand)
-                                    .then(() => alert('cURL copied to clipboard!'))
+                                    .then(() => {
+                                      const original = btn.textContent;
+                                      btn.textContent = '✅ Copied!';
+                                      setTimeout(() => { btn.textContent = original; }, 2000);
+                                    })
                                 }}
                                 style={{
                                   position:'absolute',
@@ -2485,7 +2546,7 @@
             <span className="furi">{uri}</span>
             <span className="fcnt">{els.length} scenario{els.length > 1 ? 's' : ''}</span>
           </div>
-          {els.map((el, i) => <Scenario key={el.id || i} el={el} autoOpen={scenSt(el) === 'failed'} videoIndex={videoIndex} />)}
+          {els.map((el, i) => <Scenario key={el.id || i} el={el} autoOpen={scenSt(el) === 'failed'} videoIndex={videoIndex} featureUri={uri} />)}
         </div>
       );
     }
@@ -2617,20 +2678,21 @@
       );
     }
 
-    function HistItem({ entry, active, onClick }) {
-      const ov = entry.stats.failed > 0 ? 'failed' : 'passed';
+    function HistItem({ entry, active, onClick, isLatest, moduleId }) {
+      const failed = Number(entry.failedScenarios || 0);
+      const passed = Number(entry.passedScenarios || 0);
+      const ov = failed > 0 ? 'failed' : 'passed';
       return (
         <div className={`hitem ${active ? 'ac' : ''}`} onClick={onClick}>
-          <span className="hnum">#{String(entry.id).slice(-4)}</span>
+          <span className="hnum">{shortRunId(entry.id)}</span>
           <span className={`hdot ${ov}`} />
-          <span className="hname">{entry.name}</span>
+          <span className="hname">{runLabel(entry, moduleId)}</span>
           <div className="hpills">
-            <span className="hpill hp">✓ {entry.stats.passed}</span>
-            {entry.stats.failed > 0 && <span className="hpill hf">✕ {entry.stats.failed}</span>}
-            {entry.stats.skipped > 0 && <span className="hpill hk">– {entry.stats.skipped}</span>}
+            <span className="hpill hp">✓ {passed}</span>
+            {failed > 0 && <span className="hpill hf">✕ {failed}</span>}
+            {isLatest && <span className="hpill hk">Latest</span>}
           </div>
-          <span className="htime">{ns2s(entry.dur)}</span>
-          <span className="htime">{fmtD(entry.ts)}</span>
+          <span className="htime">{fmtRunDate(entry.timestamp)}</span>
         </div>
       );
     }
@@ -2642,7 +2704,7 @@
       const [fileName, setFileName] = useState(null);
       const [filter, setFilter] = useState('all');
       const [drag, setDrag] = useState(false);
-      const [history, setHistory] = useState(() => loadH(localStorage.getItem('hq_block') || '_hap_fe_project'));
+      const [history, setHistory] = useState([]);
       const [activeId, setActiveId] = useState(null);
       const [autoLoadBlocked, setAutoLoadBlocked] = useState(false);
       const [lastLoadedAt, setLastLoadedAt] = useState(null);
@@ -2652,6 +2714,7 @@
       const [notificationBanner, setNotificationBanner] = useState(null);
       const [flashCards, setFlashCards] = useState(false);
       const [videoIndex, setVideoIndex] = useState({});
+      const [runMeta, setRunMeta] = useState(null);
       const prevStats = useRef(null);
 
       useEffect(() => {
@@ -2659,6 +2722,15 @@
           .then(r => r.json())
           .then(data => setVideoIndex(data))
           .catch(() => setVideoIndex({}));
+      }, []);
+      const loadRunHistory = useCallback(() => {
+        fetch('./reports/run-history.json?t=' + Date.now(), { cache: 'no-store' })
+          .then(r => r.ok ? r.json() : [])
+          .then(data => {
+            const sorted = (Array.isArray(data) ? data : []).sort((a, b) => Number(b.id) - Number(a.id)).slice(0, 20);
+            setHistory(sorted);
+          })
+          .catch(() => setHistory([]));
       }, []);
       const fref = useRef();
       const blockInfo = BLOCKS.find(b => b.id === selectedBlock);
@@ -2680,20 +2752,27 @@
             if (changed) { setFlashCards(true); setTimeout(() => setFlashCards(false), 700); }
             if (prevStats.current) { if (newSt.failed > prevStats.current.failed) setNotificationBanner({ type: 'fail', msg: `⚠ New failure detected in ${b}` }); else if (newSt.failed === 0 && prevStats.current.failed > 0) setNotificationBanner({ type: 'pass', msg: '✅ All tests passing!' }); else if (!changed) setNotificationBanner(null); }
             prevStats.current = newSt;
-            const h = saveR(b, fs, `${b}.json`);
-            setHistory(h);
             setFeatures(fs);
             setFileName(`${b}.json`);
-            setActiveId(h[0].id);
+            const currentRunId = meta?.runId || Date.now();
+            setActiveId(currentRunId);
+            setRunMeta({
+              id: currentRunId,
+              timestamp: meta?.generatedAt || new Date().toISOString(),
+              passedScenarios: newSt.passed,
+              failedScenarios: newSt.failed,
+              totalScenarios: newSt.total
+            });
             setFilter('all');
             setLastLoadedAt(meta ? new Date(meta.generatedAt).getTime() : Date.now());
+            loadRunHistory();
             setLoading(false);
           })
           .catch(() => { setAutoLoadBlocked(true); setLoading(false); setNotificationBanner(null); });
-      }, [selectedBlock]);
+      }, [selectedBlock, loadRunHistory]);
 
       useEffect(() => { document.documentElement.setAttribute('data-theme', theme); localStorage.setItem('hq_theme', theme); }, [theme]);
-      useEffect(() => { localStorage.setItem('hq_block', selectedBlock); setHistory(loadH(selectedBlock)); prevStats.current = null; loadFromUrl(selectedBlock); }, [selectedBlock]);
+      useEffect(() => { localStorage.setItem('hq_block', selectedBlock); prevStats.current = null; loadRunHistory(); loadFromUrl(selectedBlock); }, [selectedBlock, loadRunHistory]);
       useEffect(() => { localStorage.setItem('hq_live', liveMode); }, [liveMode]);
       useEffect(() => {
         if (!liveMode) return;
@@ -2702,10 +2781,28 @@
       }, [liveMode, selectedBlock, loadFromUrl]);
 
       const onBlockChange = e => { const v = e.target.value; if (v) { prevStats.current = null; setSelectedBlock(v); setNotificationBanner(null); } };
+      const onRunChange = e => {
+        const runId = e.target.value;
+        const run = history.find(h => String(h.id) === String(runId));
+        if (!run) return;
+        fetch(`./reports/runs/${run.id}/${selectedBlock}.json?t=` + Date.now(), { cache: 'no-store' })
+          .then(r => r.ok ? r.json() : null)
+          .then(data => {
+            const fs = data?.features || [];
+            if (fs.length) {
+              setFeatures(fs);
+              setFileName(`${selectedBlock}.json`);
+              setActiveId(run.id);
+              setRunMeta(run);
+              setFilter('all');
+              setLastLoadedAt(new Date(run.timestamp).getTime());
+            }
+          });
+      };
 
       const processFile = useCallback(file => {
         const r = new FileReader();
-        r.onload = e => { try { const d = JSON.parse(e.target.result); const fs = Array.isArray(d) ? d : (d.features || []); const h = saveR(selectedBlock, fs, file.name); setHistory(h); setFeatures(fs); setFileName(file.name); setActiveId(h[0].id); setFilter('all'); setLastLoadedAt(Date.now()); } catch { alert('Invalid JSON. Please upload a valid cucumber-report.json'); } };
+        r.onload = e => { try { const d = JSON.parse(e.target.result); const fs = Array.isArray(d) ? d : (d.features || []); setFeatures(fs); setFileName(file.name); setActiveId(Date.now()); setFilter('all'); setLastLoadedAt(Date.now()); } catch { alert('Invalid JSON. Please upload a valid cucumber-report.json'); } };
         r.readAsText(file);
       }, [selectedBlock]);
 
@@ -2714,7 +2811,7 @@
       const st = useMemo(() => features ? stats(features) : null, [features]);
       const dur = useMemo(() => features ? totalNs(features) : 0, [features]);
       const pRate = st ? Math.round((st.passed / Math.max(st.total, 1)) * 100) : 0;
-      const curEntry = history.find(h => h.id === activeId);
+      const curEntry = history.find(h => Number(h.id) === Number(activeId)) || runMeta;
 
       const totalSteps = features ? (features.flatMap(f => f.elements || []).flatMap(e => e.steps || []).filter(s => !s.hidden)).length : 0;
 
@@ -2730,8 +2827,22 @@
             </div>
             <div className="hactions">
               <select className="block-select" value={selectedBlock} onChange={onBlockChange}>
-                {BLOCKS.map(b => <option key={b.id} value={b.id}>{b.label}</option>)}
+                {BLOCKS.map(b => <option key={b.id} value={b.id} title={MODULE_META[b.id]?.technical}>{b.label}</option>)}
               </select>
+              {history.length > 0 && (
+                <select className="block-select" value={activeId || ''} onChange={onRunChange} title="Run selector">
+                  {history.map((h, idx) => (
+                    <option key={h.id} value={h.id}>
+                      {runLabel(h, selectedBlock)}{idx === 0 ? ' • Latest' : ''}
+                    </option>
+                  ))}
+                </select>
+              )}
+              {curEntry && (
+                <div className="livepill" title={MODULE_META[selectedBlock]?.technical}>
+                  {MODULE_META[selectedBlock]?.label} | Run {shortRunId(curEntry.id)} • {fmtRunDateShort(curEntry.timestamp)}
+                </div>
+              )}
               {features && <div className="livepill"><span className="ldot" />{fileName}</div>}
               {features && lastLoadedAt && !liveMode && <div className="livepill" style={{ marginRight: 4 }}>🕐 Last loaded: {fmtD(lastLoadedAt)}</div>}
               {features && liveMode && <div className="livepill" style={{ marginRight: 4 }}>{loading ? '🔄 Tests running...' : countdown > 1 ? `Refreshing in ${countdown}s...` : '✓ Up to date'}</div>}
@@ -2819,7 +2930,7 @@
 
               {curEntry && (
                 <div className="metarow afu3">
-                  {[['📄', 'File', fileName], ['🕐', 'Run at', fmtD(curEntry.ts)], ['📁', 'Features', features.length], ['🏷', 'Steps', totalSteps]].map(([icon, l, v]) => (
+                  {[['📄', 'File', fileName], ['🕐', 'Run', `Run ${shortRunId(curEntry.id)} • ${fmtRunDate(curEntry.timestamp)}`], ['📁', 'Features', features.length], ['🏷', 'Steps', totalSteps]].map(([icon, l, v]) => (
                     <div key={l} className="mi"><span>{icon}</span><span>{l}: <span className="miv">{v}</span></span></div>
                   ))}
                 </div>
@@ -2842,10 +2953,24 @@
                 <div style={{ marginTop: 40 }} className="afu">
                   <div className="secrow">
                     <span className="sectitle">Run History</span>
-                    <button className="btn" style={{ fontSize: 12 }} onClick={() => { if (window.confirm('Clear all run history?')) { localStorage.removeItem(getKey(selectedBlock)); setHistory([]); } }}>🗑 Clear</button>
+                    <button className="btn" style={{ fontSize: 12 }} onClick={() => loadRunHistory()}>🔄 Reload</button>
                   </div>
                   <div className="hgrid">
-                    {history.map(e => <HistItem key={e.id} entry={e} active={e.id === activeId} onClick={() => { setFeatures(e.features); setFileName(e.name); setActiveId(e.id); setFilter('all'); setLastLoadedAt(e.ts); }} />)}
+                    {history.map((e, idx) => <HistItem key={e.id} entry={e} moduleId={selectedBlock} isLatest={idx === 0} active={Number(e.id) === Number(activeId)} onClick={() => {
+                      fetch(`./reports/runs/${e.id}/${selectedBlock}.json?t=` + Date.now(), { cache: 'no-store' })
+                        .then(r => r.ok ? r.json() : null)
+                        .then(data => {
+                          const fs = data?.features || [];
+                          if (fs.length) {
+                            setFeatures(fs);
+                            setFileName(`${selectedBlock}.json`);
+                            setActiveId(e.id);
+                            setRunMeta(e);
+                            setFilter('all');
+                            setLastLoadedAt(new Date(e.timestamp).getTime());
+                          }
+                        });
+                    }} />)}
                   </div>
                 </div>
               )}
@@ -2855,7 +2980,20 @@
               <div style={{ marginTop: 32 }}>
                 <div className="secrow"><span className="sectitle">Previous Runs</span></div>
                 <div className="hgrid">
-                  {history.map(e => <HistItem key={e.id} entry={e} active={false} onClick={() => { setFeatures(e.features); setFileName(e.name); setActiveId(e.id); setLastLoadedAt(e.ts); }} />)}
+                  {history.map((e, idx) => <HistItem key={e.id} entry={e} moduleId={selectedBlock} isLatest={idx === 0} active={false} onClick={() => {
+                    fetch(`./reports/runs/${e.id}/${selectedBlock}.json?t=` + Date.now(), { cache: 'no-store' })
+                      .then(r => r.ok ? r.json() : null)
+                      .then(data => {
+                        const fs = data?.features || [];
+                        if (fs.length) {
+                          setFeatures(fs);
+                          setFileName(`${selectedBlock}.json`);
+                          setActiveId(e.id);
+                          setRunMeta(e);
+                          setLastLoadedAt(new Date(e.timestamp).getTime());
+                        }
+                      });
+                  }} />)}
                 </div>
               </div>
             )}

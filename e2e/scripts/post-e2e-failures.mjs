@@ -16,6 +16,10 @@ const videosDir = path.join(root, "e2e", "reports", "videos");
 const outMd = path.join(root, "e2e", "reports", "E2E-FAILURE-REPORT.md");
 const outSummaryJson = path.join(root, "e2e", "reports", "failures", "last-run", "summary.json");
 const outAnalysisDir = path.join(root, "e2e", "reports", "analysis");
+const cucumberSources = [
+  path.join(root, "codebase", "_hap_fe_project", "artifacts", "cucumber", "cucumber.json"),
+  path.join(root, "codebase", "_hap_fe_auth", "artifacts", "cucumber", "cucumber.json"),
+];
 
 function loadEnv() {
   const envPath = path.join(root, ".env");
@@ -47,6 +51,102 @@ function readNdjson() {
       }
     })
     .filter(Boolean);
+}
+
+function parseJsonSafely(value, fallback = null) {
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+
+function collectCucumberScenarios() {
+  const all = [];
+  for (const src of cucumberSources) {
+    if (!fs.existsSync(src)) continue;
+    const json = parseJsonSafely(fs.readFileSync(src, "utf8"), []);
+    for (const feature of Array.isArray(json) ? json : []) {
+      for (const scenario of feature.elements || []) {
+        all.push({
+          featureUri: feature.uri || "",
+          featureName: feature.name || "",
+          scenario,
+        });
+      }
+    }
+  }
+  return all;
+}
+
+function findScenarioEvidence(failure, allScenarios) {
+  const targetUri = String(failure.uri || "").replace(/\\/g, "/");
+  const targetName = String(failure.scenarioName || "").trim().toLowerCase();
+  return (
+    allScenarios.find((row) => {
+      const scenarioName = String(row.scenario?.name || "").trim().toLowerCase();
+      const uri = String(row.featureUri || "").replace(/\\/g, "/");
+      return scenarioName === targetName && (targetUri ? uri.endsWith(targetUri) : true);
+    }) || null
+  );
+}
+
+function extractNetworkEvidence(scenario) {
+  const embeddings = [
+    ...(scenario.before || []),
+    ...(scenario.after || []),
+    ...(scenario.steps || []),
+  ].flatMap((x) => x.embeddings || []);
+  const networkEmb = embeddings.find((e) => e.mime_type === "application/json");
+  if (!networkEmb?.data) return null;
+  const decoded = parseJsonSafely(Buffer.from(networkEmb.data, "base64").toString("utf8"), null);
+  if (!decoded?.failed_requests?.length) return null;
+  const ranked = [...decoded.failed_requests].sort((a, b) => {
+    const scoreA = a.status >= 500 ? 3 : a.status >= 400 ? 2 : 1;
+    const scoreB = b.status >= 500 ? 3 : b.status >= 400 ? 2 : 1;
+    return scoreB - scoreA;
+  });
+  const exact = ranked[0];
+  let responseMessage = "";
+  if (exact?.responseBody && exact.responseBody !== "Could not read response") {
+    const parsed = parseJsonSafely(exact.responseBody, null);
+    responseMessage = parsed?.message || parsed?.status || String(exact.responseBody);
+  }
+  return {
+    exact,
+    responseMessage: String(responseMessage || "").slice(0, 1000),
+    topFailures: ranked.slice(0, 5),
+  };
+}
+
+function enrichFailuresFromCucumber(failures) {
+  const allScenarios = collectCucumberScenarios();
+  return failures.map((f) => {
+    const match = findScenarioEvidence(f, allScenarios);
+    if (!match) return f;
+    const scenario = match.scenario || {};
+    const failedStep = (scenario.steps || []).find((s) => s.result?.status === "failed");
+    const network = extractNetworkEvidence(scenario);
+    const expectedResult = "After creating a project, Project List should be visible and the new project should appear in listing.";
+    const actualResult = network?.exact
+      ? `API ${network.exact.method} ${network.exact.status} ${network.exact.url} failed, then UI timed out waiting for Project List heading.`
+      : "Project List heading did not appear within timeout.";
+    return {
+      ...f,
+      failedStepText: failedStep ? `${failedStep.keyword || ""}${failedStep.name || ""}`.trim() : f.failedStepText,
+      exactApiFailure: network?.exact
+        ? {
+            method: network.exact.method,
+            status: network.exact.status,
+            url: network.exact.url,
+            responseMessage: network.responseMessage,
+            curlCommand: network.exact.curlCommand || "",
+          }
+        : null,
+      expectedResult,
+      actualResult,
+    };
+  });
 }
 
 function runAiFailureAnalysis() {
@@ -153,7 +253,16 @@ function buildDescriptionAdf(failure, videoAbsPath = "") {
   const parts = [
     `Scenario: ${failure.scenarioName}`,
     `When: ${failure.failedAt}`,
-    `URI: ${failure.uri || "n/a"}`,
+    `Feature / URI: ${failure.uri || "n/a"}`,
+    `Failed step: ${failure.failedStepText || "n/a"}`,
+    `Expected result: ${failure.expectedResult || "n/a"}`,
+    `Actual result: ${failure.actualResult || "n/a"}`,
+    failure.exactApiFailure
+      ? `Exact API Failure: ${failure.exactApiFailure.method} ${failure.exactApiFailure.status} ${failure.exactApiFailure.url}`
+      : "",
+    failure.exactApiFailure?.responseMessage
+      ? `API response message: ${failure.exactApiFailure.responseMessage}`
+      : "",
     "Error:",
     failure.error?.fullMessage || failure.error?.message || "",
     "Developer suggestions:",
@@ -167,6 +276,9 @@ function buildDescriptionAdf(failure, videoAbsPath = "") {
     `AI severity: ${failure.aiAnalysis?.severity || "medium"}`,
     "Tracked URLs:",
     JSON.stringify(failure.lastTrackedRequests || {}, null, 2),
+    failure.exactApiFailure?.curlCommand
+      ? `Repro cURL:\n${failure.exactApiFailure.curlCommand}`
+      : "",
     videoAbsPath ? `Full flow video file: ${videoAbsPath}` : "",
   ].filter((p) => String(p).trim().length > 0);
   return {
@@ -299,11 +411,31 @@ async function githubCreateIssue(failure, videoAbsPath) {
     return null;
   }
 
-  const title = `[E2E] ${(failure.scenarioName || "Failure").slice(0, 200)}`;
+  const apiHint = failure.exactApiFailure?.responseMessage
+    ? ` - ${String(failure.exactApiFailure.responseMessage).slice(0, 80)}`
+    : "";
+  const title = `[E2E] ${(failure.scenarioName || "Failure").slice(0, 200)}${apiHint}`;
   const bodyLines = [
     `Scenario: ${failure.scenarioName || "Unnamed"}`,
     `When: ${failure.failedAt || "n/a"}`,
     `Feature / URI: ${failure.uri || "n/a"}`,
+    `Failed step: ${failure.failedStepText || "n/a"}`,
+    "",
+    "Expected Result:",
+    failure.expectedResult || "n/a",
+    "",
+    "Actual Result:",
+    failure.actualResult || "n/a",
+    ...(failure.exactApiFailure
+      ? [
+          "",
+          "Exact API Failure Detected:",
+          `${failure.exactApiFailure.method} ${failure.exactApiFailure.status} ${failure.exactApiFailure.url}`,
+          failure.exactApiFailure.responseMessage
+            ? `Response: ${failure.exactApiFailure.responseMessage}`
+            : "Response: n/a",
+        ]
+      : []),
     "",
     "Error:",
     (failure.error?.fullMessage || failure.error?.message || "").slice(0, 8000),
@@ -326,6 +458,9 @@ async function githubCreateIssue(failure, videoAbsPath) {
   ];
   if (failure.screenshotRelative) {
     bodyLines.push("", `Screenshot: ${failure.screenshotRelative}`);
+  }
+  if (failure.exactApiFailure?.curlCommand) {
+    bodyLines.push("", "Repro cURL:", "```bash", failure.exactApiFailure.curlCommand.slice(0, 8000), "```");
   }
   if (videoAbsPath) {
     bodyLines.push("", `Full flow video file: ${videoAbsPath}`);
@@ -376,6 +511,7 @@ async function main() {
     runAiFailureAnalysis();
     failures = readNdjson();
   }
+  failures = enrichFailuresFromCucumber(failures);
   const video = newestVideo();
   const fullVideoPath = video ? path.join(root, video) : "";
   const lines = [];

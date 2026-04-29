@@ -165,7 +165,7 @@ function loadEnv() {
     if (i === -1) continue;
     const k = t.slice(0, i).trim();
     const v = t.slice(i + 1).trim();
-    if (!process.env[k]) process.env[k] = v;
+    process.env[k] = v;
   }
 }
 loadEnv();
@@ -212,6 +212,42 @@ async function analyzeFailure(scenario, featureName, videoIndex) {
 
   const rawError = failedStep.result?.error_message || 'No error message';
 
+  // Extract network failures from scenario embeddings (hooks + steps)
+  const networkEmb = [
+    ...(scenario.before || []),
+    ...(scenario.after || []),
+    ...(scenario.steps || [])
+  ]
+    .flatMap(s => s.embeddings || [])
+    .find(e => e.mime_type === 'application/json')
+
+  let networkContext = ''
+  if (networkEmb) {
+    try {
+      const networkData = JSON.parse(
+        Buffer.from(networkEmb.data, 'base64').toString('utf8')
+      )
+      if (networkData.failed_requests?.length > 0) {
+        const ranked = [...networkData.failed_requests].sort((a, b) => {
+          const aScore = (a.status >= 500 ? 3 : a.status >= 400 ? 2 : 1)
+          const bScore = (b.status >= 500 ? 3 : b.status >= 400 ? 2 : 1)
+          return bScore - aScore
+        })
+        const topFailures = ranked.slice(0, 3)
+        networkContext = `\n\nFAILED NETWORK REQUESTS during test:\n` +
+          topFailures.map(r => {
+            const responseSnippet = r.responseBody && r.responseBody !== 'Could not read response'
+              ? `\n    response_body: ${String(r.responseBody).slice(0, 400)}`
+              : ''
+            const curlSnippet = r.curlCommand
+              ? `\n    curl: ${String(r.curlCommand).replace(/\n/g, ' ').slice(0, 800)}`
+              : ''
+            return `  ${r.method} ${r.status} ${r.url}${responseSnippet}${curlSnippet}`
+          }).join('\n')
+      }
+    } catch {}
+  }
+
   userContent.push({
     type: 'text',
     text: `FAILED TEST:
@@ -221,6 +257,7 @@ Feature: ${featureName}
 Failed Step: "${failedStep.keyword}${failedStep.name}"
 Error (Raw Log & Stack Trace): 
 ${rawError}
+${networkContext}
 
 Duration: ${failedStep.result?.duration}ns
 Video recorded: ${videoAvailable ? 'YES' : 'NO'}
@@ -319,7 +356,7 @@ if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'your_key_here') {
     const vIndex = fs.existsSync(vIndexFile) ? JSON.parse(fs.readFileSync(vIndexFile, 'utf8')) : {};
 
     const dashboardJson = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
-    const featuresArray = Array.isArray(dashboardJson) ? dashboardJson : (dashboardJson.results || []);
+    const featuresArray = Array.isArray(dashboardJson) ? dashboardJson : (dashboardJson.results || dashboardJson.features || dashboardJson.data || []);
 
     let moduleFailures = false;
     for (const feature of featuresArray) {
