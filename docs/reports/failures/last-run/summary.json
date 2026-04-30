@@ -1,0 +1,389 @@
+{
+  "generatedAt": "2026-04-30T05:43:42.947Z",
+  "videoRelative": null,
+  "failures": [
+    {
+      "scenarioName": "Create new project positive",
+      "uri": "tests\\bdd\\features\\project\\project-listing-and-creation.feature",
+      "failedAt": "2026-04-30T05:33:23.153Z",
+      "error": {
+        "message": "locator.waitFor: Timeout 30000ms exceeded.",
+        "fullMessage": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('h3[aria-label=\"table-title\"]').filter({ hasText: /^Project List$/i }).first() to be visible\n\n    at expectProjectListingVisible (C:\\happilee-test-platform\\codebase\\_hap_fe_project\\tests\\bdd\\support\\uiUtils.ts:46:15)\n    at ProjectPage.expectProjectListingVisible (C:\\happilee-test-platform\\codebase\\_hap_fe_project\\tests\\bdd\\pages\\ProjectPage.ts:36:89)\n    at AppWorld.<anonymous> (C:\\happilee-test-platform\\codebase\\_hap_fe_project\\tests\\bdd\\steps\\project.steps.ts:78:25)"
+      },
+      "failureExplanation": {
+        "whatHappened": "Scenario failed during project test run",
+        "whyItHappened": "locator.waitFor: Timeout 30000ms exceeded.",
+        "whereItFailed": "tests\\bdd\\features\\project\\project-listing-and-creation.feature"
+      },
+      "screenshotRelative": "e2e/reports/failures/last-run/1777527202959-Create-new-project-positive.png",
+      "visibleUIError": null,
+      "developerSuggestions": [
+        "Check the project module logs and screenshots."
+      ],
+      "lastTrackedRequests": {},
+      "aiAnalysis": {
+        "whatHappened": "The BDD test scenario 'Create new project positive' failed when attempting to verify the project listing page after project creation. The test waited for 30 seconds for an h3 element with aria-label='table-title' containing the text 'Project List' to become visible, but the element never appeared on the page. No UI error message was captured on screen, indicating the page either did not load, loaded incorrectly, or the expected element was not rendered.",
+        "rootCause": "After creating a new project, the application failed to navigate to or properly render the Project List page. The locator 'h3[aria-label=\"table-title\"]' with text matching 'Project List' was not found in the DOM within the 30-second timeout period. This suggests either: (1) the page navigation after project creation failed, (2) the Project List component did not mount/render, (3) the DOM structure changed and the locator is outdated, or (4) a backend/API failure prevented data from loading, causing the UI to remain in a loading or error state.",
+        "developerSuggestions": [
+          "Check the network tab and backend logs to verify if the POST request for project creation succeeded and if the subsequent GET request to fetch the project list was made and returned successfully. Look for any 4xx/5xx HTTP errors or failed API calls.",
+          "Inspect the actual DOM structure when the test fails by adding a screenshot capture before the assertion in uiUtils.ts:46. Verify if the h3 element exists with a different aria-label, different text casing, or if the component structure has changed in recent commits.",
+          "Review the ProjectPage.ts:36 and project.steps.ts:78 to confirm the navigation flow after project creation. Add explicit wait for navigation completion or URL change before calling expectProjectListingVisible() to ensure the page transition completed.",
+          "Check if there are any JavaScript console errors preventing the React/Vue component from rendering by adding console log capture in the test. Review recent changes to the Project List component that might have altered the aria-label or heading structure.",
+          "Verify environment-specific issues by checking if the test database has proper seed data and if any environment variables related to project listing (pagination, permissions, feature flags) are correctly configured in the test environment configuration files."
+        ],
+        "severity": "high",
+        "tokenUsage": {
+          "inputTokens": 492,
+          "outputTokens": 628,
+          "totalTokens": 1120
+        }
+      },
+      "aiTokenUsage": {
+        "inputTokens": 492,
+        "outputTokens": 628,
+        "totalTokens": 1120
+      },
+      "failedStepText": "Then the project should be created and appear in listing",
+      "exactApiFailure": {
+        "method": "POST",
+        "status": 500,
+        "url": "https://stageapi.happilee.io/api/v1/launchNewProject?",
+        "responseMessage": "\"profilePicUrl\" is not allowed",
+        "curlCommand": "curl -X POST 'https://stageapi.happilee.io/api/v1/launchNewProject?' \\\n  -H ':authority: stageapi.happilee.io' \\\n  -H ':method: POST' \\\n  -H ':path: /api/v1/launchNewProject?' \\\n  -H ':scheme: https' \\\n  -H 'accept: application/json, text/plain, */*' \\\n  -H 'accept-encoding: gzip, deflate, br, zstd' \\\n  -H 'accept-language: en-US,en;q=0.9' \\\n  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjEiLCJwaG9uZV9udW1iZXIiOiI5MTk1MjYyMzcxOTgiLCJpYXQiOjE3Nzc1MjcxNjEsImV4cCI6MTc3NzUyNzIyMX0.r4BuDkgoK-XgXplXwmGOnByPZejnIHd3Wh9IEbB_wGY' \\\n  -H 'content-type: application/json' \\\n  -H 'origin: https://stage-app.happilee.io' \\\n  -H 'priority: u=1, i' \\\n  -H 'referer: https://stage-app.happilee.io/' \\\n  -H 'sec-ch-ua: \"Chromium\";v=\"147\", \"Not.A/Brand\";v=\"8\"' \\\n  -H 'sec-ch-ua-mobile: ?0' \\\n  -H 'sec-ch-ua-platform: \"Windows\"' \\\n  -H 'sec-fetch-dest: empty' \\\n  -H 'sec-fetch-mode: cors' \\\n  -H 'sec-fetch-site: same-site' \\\n  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36' \\\n  --data '{\"project_id\":\"\",\"project_name\":\"Automation Test Project\",\"organization_name\":\"NeoIto\",\"business_category_id\":\"17\",\"website_link\":\"https://stage-app.happilee.io/\",\"selected_media_id\":\"194\",\"time_zone\":{\"label\":\"(GMT+5:30) Chennai, Kolkata, Mumbai, New Delhi\",\"value\":\"Asia/Kolkata\"},\"profilePicUrl\":\"https://happilee-store.s3.ap-south-1.amazonaws.com/documents//stig-black_1.png\"}'"
+      },
+      "expectedResult": "After creating a project, Project List should be visible and the new project should appear in listing.",
+      "actualResult": "API POST 500 https://stageapi.happilee.io/api/v1/launchNewProject? failed, then UI timed out waiting for Project List heading.",
+      "stepTimeline": [
+        {
+          "index": 1,
+          "keyword": "Given ",
+          "text": "I am on the auth login page",
+          "status": "passed",
+          "durationNs": 5250836099,
+          "durationMs": 5251,
+          "hasScreenshot": true
+        },
+        {
+          "index": 2,
+          "keyword": "And ",
+          "text": "I click on Login with Email id Option",
+          "status": "passed",
+          "durationNs": 349531998,
+          "durationMs": 350,
+          "hasScreenshot": true
+        },
+        {
+          "index": 3,
+          "keyword": "And ",
+          "text": "the user enters \"validEmail\"",
+          "status": "passed",
+          "durationNs": 260946599,
+          "durationMs": 261,
+          "hasScreenshot": true
+        },
+        {
+          "index": 4,
+          "keyword": "And ",
+          "text": "I click Get Otp Button",
+          "status": "passed",
+          "durationNs": 1069563199,
+          "durationMs": 1070,
+          "hasScreenshot": true
+        },
+        {
+          "index": 5,
+          "keyword": "When ",
+          "text": "I fetch otp from yopmail and enter",
+          "status": "passed",
+          "durationNs": 22296812499,
+          "durationMs": 22297,
+          "hasScreenshot": true
+        },
+        {
+          "index": 6,
+          "keyword": "And ",
+          "text": "I click on Login Button",
+          "status": "passed",
+          "durationNs": 1210377099,
+          "durationMs": 1210,
+          "hasScreenshot": true
+        },
+        {
+          "index": 7,
+          "keyword": "When ",
+          "text": "I open the Projects menu and click Create New Project",
+          "status": "passed",
+          "durationNs": 5617226497,
+          "durationMs": 5617,
+          "hasScreenshot": true
+        },
+        {
+          "index": 8,
+          "keyword": "And ",
+          "text": "I enter project name \"Automation Test Project\" on the create project page",
+          "status": "passed",
+          "durationNs": 1357229299,
+          "durationMs": 1357,
+          "hasScreenshot": true
+        },
+        {
+          "index": 9,
+          "keyword": "And ",
+          "text": "I enter organization name \"NeoIto\" on the create project page",
+          "status": "passed",
+          "durationNs": 240286899,
+          "durationMs": 240,
+          "hasScreenshot": true
+        },
+        {
+          "index": 10,
+          "keyword": "And ",
+          "text": "I select business category \"Automotive\" on the create project page",
+          "status": "passed",
+          "durationNs": 482246297,
+          "durationMs": 482,
+          "hasScreenshot": true
+        },
+        {
+          "index": 11,
+          "keyword": "And ",
+          "text": "I enter website \"https://stage-app.happilee.io/\" on the create project page",
+          "status": "passed",
+          "durationNs": 250417198,
+          "durationMs": 250,
+          "hasScreenshot": true
+        },
+        {
+          "index": 12,
+          "keyword": "And ",
+          "text": "I select Asia Kolkata timezone on the create project page",
+          "status": "passed",
+          "durationNs": 1311244898,
+          "durationMs": 1311,
+          "hasScreenshot": true
+        },
+        {
+          "index": 13,
+          "keyword": "And ",
+          "text": "I select the brand logo tile on the create project page",
+          "status": "passed",
+          "durationNs": 345503299,
+          "durationMs": 346,
+          "hasScreenshot": true
+        },
+        {
+          "index": 14,
+          "keyword": "And ",
+          "text": "I click Launch Project on the create project page",
+          "status": "passed",
+          "durationNs": 797126500,
+          "durationMs": 797,
+          "hasScreenshot": true
+        },
+        {
+          "index": 15,
+          "keyword": "Then ",
+          "text": "the project should be created and appear in listing",
+          "status": "failed",
+          "durationNs": 30235481299,
+          "durationMs": 30235,
+          "hasScreenshot": true
+        }
+      ]
+    },
+    {
+      "scenarioName": "Project listing refresh",
+      "uri": "tests\\bdd\\features\\project\\project-listing-and-creation.feature",
+      "failedAt": "2026-04-30T05:35:32.854Z",
+      "error": {
+        "message": "locator.waitFor: Timeout 30000ms exceeded.",
+        "fullMessage": "locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n  - waiting for locator('h3[aria-label=\"table-title\"]').filter({ hasText: /^Project List$/i }).first() to be visible\n\n    at expectProjectListingVisible (C:\\happilee-test-platform\\codebase\\_hap_fe_project\\tests\\bdd\\support\\uiUtils.ts:46:15)\n    at ProjectPage.expectProjectListingVisible (C:\\happilee-test-platform\\codebase\\_hap_fe_project\\tests\\bdd\\pages\\ProjectPage.ts:36:89)\n    at AppWorld.<anonymous> (C:\\happilee-test-platform\\codebase\\_hap_fe_project\\tests\\bdd\\steps\\project.steps.ts:116:25)"
+      },
+      "failureExplanation": {
+        "whatHappened": "Scenario failed during project test run",
+        "whyItHappened": "locator.waitFor: Timeout 30000ms exceeded.",
+        "whereItFailed": "tests\\bdd\\features\\project\\project-listing-and-creation.feature"
+      },
+      "screenshotRelative": "e2e/reports/failures/last-run/1777527332653-Project-listing-refresh.png",
+      "visibleUIError": null,
+      "developerSuggestions": [
+        "Check the project module logs and screenshots."
+      ],
+      "lastTrackedRequests": {},
+      "aiAnalysis": {
+        "whatHappened": "The automated test for 'Project listing refresh' scenario failed because the test could not find the 'Project List' heading element on the page within the 30-second timeout period. The test was specifically looking for an h3 element with aria-label='table-title' containing the text 'Project List' (case-insensitive), but this element never became visible. No UI error message was captured on screen, suggesting the page may have failed to load, loaded incorrectly, or the element structure changed.",
+        "rootCause": "The locator 'h3[aria-label=\"table-title\"]' with text matching /^Project List$/i failed to appear within 30 seconds. This indicates one of the following: (1) the project listing page failed to render completely, (2) the API call to fetch project data timed out or failed silently, (3) the DOM structure changed and the h3 element no longer has aria-label='table-title' or the text changed, (4) a navigation issue prevented reaching the project listing page, or (5) JavaScript errors prevented the component from mounting.",
+        "developerSuggestions": [
+          "Check the browser console logs and network tab in the test screenshots/videos (if available) to identify any failed API calls to the project listing endpoint or JavaScript errors that prevented the page from rendering",
+          "Verify the DOM structure in ProjectPage.ts:36 and uiUtils.ts:46 - inspect if the h3 element still uses aria-label='table-title' and contains 'Project List' text, as frontend changes may have modified the component structure without updating the test selectors",
+          "Add explicit wait conditions before expectProjectListingVisible() in project.steps.ts:116 to ensure navigation completed and check the page URL to confirm the test actually reached the project listing route",
+          "Review backend project module logs for any API failures, database connection issues, or permission errors that would prevent project data from being returned to the frontend",
+          "Increase logging in uiUtils.ts:46 to capture the actual page state, visible elements, and any error messages in the DOM when the timeout occurs, and consider adding a screenshot capture on failure for better debugging"
+        ],
+        "severity": "high",
+        "tokenUsage": {
+          "inputTokens": 491,
+          "outputTokens": 588,
+          "totalTokens": 1079
+        }
+      },
+      "aiTokenUsage": {
+        "inputTokens": 491,
+        "outputTokens": 588,
+        "totalTokens": 1079
+      },
+      "failedStepText": "Then I should see the newly created project in listing",
+      "exactApiFailure": {
+        "method": "GET",
+        "status": 404,
+        "url": "https://stage-app.happilee.io/auth/login",
+        "responseMessage": "<!DOCTYPE html>\n<html lang=\"en\">\n  <head>\n    <meta charset=\"UTF-8\" />\n    <meta http-equiv=\"X-UA-Compatible\" content=\"IE=edge\" />\n    <meta name=\"viewport\" content=\"width=device-width,height=device-height, initial-scale=1, user-scalable=no\" />\n    <title></title>\n    <script src=\"https://checkout.razorpay.com/v1/checkout.js\"></script>\n    <style>\n      ::-webkit-scrollbar {\n        background: transparent;\n        width: 4px !important;\n        height: 4px !important;\n      }\n      ::-webkit-scrollbar-thumb {\n        background: rgba(54, 54, 54, 0.25);\n        width: 1px !important;\n        border-radius: 30px !important;\n      }\n    </style>\n  <script defer src=\"/main.5879098df434f5d21d5d.js\"></script></head>\n  <body>\n    <div id=\"root\"></div>\n  </body>\n</html>\n",
+        "curlCommand": "curl -X GET 'https://stage-app.happilee.io/auth/login' \\\n  -H ':authority: stage-app.happilee.io' \\\n  -H ':method: GET' \\\n  -H ':path: /auth/login' \\\n  -H ':scheme: https' \\\n  -H 'accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7' \\\n  -H 'accept-encoding: gzip, deflate, br, zstd' \\\n  -H 'accept-language: en-US,en;q=0.9' \\\n  -H 'priority: u=0, i' \\\n  -H 'sec-ch-ua: \"Chromium\";v=\"147\", \"Not.A/Brand\";v=\"8\"' \\\n  -H 'sec-ch-ua-mobile: ?0' \\\n  -H 'sec-ch-ua-platform: \"Windows\"' \\\n  -H 'sec-fetch-dest: document' \\\n  -H 'sec-fetch-mode: navigate' \\\n  -H 'sec-fetch-site: none' \\\n  -H 'sec-fetch-user: ?1' \\\n  -H 'upgrade-insecure-requests: 1' \\\n  -H 'user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36' "
+      },
+      "expectedResult": "After creating a project, Project List should be visible and the new project should appear in listing.",
+      "actualResult": "API GET 404 https://stage-app.happilee.io/auth/login failed, then UI timed out waiting for Project List heading.",
+      "stepTimeline": [
+        {
+          "index": 1,
+          "keyword": "Given ",
+          "text": "I am on the auth login page",
+          "status": "passed",
+          "durationNs": 4605676698,
+          "durationMs": 4606,
+          "hasScreenshot": true
+        },
+        {
+          "index": 2,
+          "keyword": "And ",
+          "text": "I click on Login with Email id Option",
+          "status": "passed",
+          "durationNs": 477568197,
+          "durationMs": 478,
+          "hasScreenshot": true
+        },
+        {
+          "index": 3,
+          "keyword": "And ",
+          "text": "the user enters \"validEmail\"",
+          "status": "passed",
+          "durationNs": 213441098,
+          "durationMs": 213,
+          "hasScreenshot": true
+        },
+        {
+          "index": 4,
+          "keyword": "And ",
+          "text": "I click Get Otp Button",
+          "status": "passed",
+          "durationNs": 733555498,
+          "durationMs": 734,
+          "hasScreenshot": true
+        },
+        {
+          "index": 5,
+          "keyword": "When ",
+          "text": "I fetch otp from yopmail and enter",
+          "status": "passed",
+          "durationNs": 23141586599,
+          "durationMs": 23142,
+          "hasScreenshot": true
+        },
+        {
+          "index": 6,
+          "keyword": "And ",
+          "text": "I click on Login Button",
+          "status": "passed",
+          "durationNs": 1043545998,
+          "durationMs": 1044,
+          "hasScreenshot": true
+        },
+        {
+          "index": 7,
+          "keyword": "When ",
+          "text": "I open the Projects menu and click Create New Project",
+          "status": "passed",
+          "durationNs": 6800429099,
+          "durationMs": 6800,
+          "hasScreenshot": true
+        },
+        {
+          "index": 8,
+          "keyword": "And ",
+          "text": "I enter project name \"Automation Test Project\" on the create project page",
+          "status": "passed",
+          "durationNs": 362152497,
+          "durationMs": 362,
+          "hasScreenshot": true
+        },
+        {
+          "index": 9,
+          "keyword": "And ",
+          "text": "I enter organization name \"NeoIto\" on the create project page",
+          "status": "passed",
+          "durationNs": 308861198,
+          "durationMs": 309,
+          "hasScreenshot": true
+        },
+        {
+          "index": 10,
+          "keyword": "And ",
+          "text": "I select business category \"Automotive\" on the create project page",
+          "status": "passed",
+          "durationNs": 483955899,
+          "durationMs": 484,
+          "hasScreenshot": true
+        },
+        {
+          "index": 11,
+          "keyword": "And ",
+          "text": "I enter website \"https://stage-app.happilee.io/\" on the create project page",
+          "status": "passed",
+          "durationNs": 262124198,
+          "durationMs": 262,
+          "hasScreenshot": true
+        },
+        {
+          "index": 12,
+          "keyword": "And ",
+          "text": "I select Asia Kolkata timezone on the create project page",
+          "status": "passed",
+          "durationNs": 1485306298,
+          "durationMs": 1485,
+          "hasScreenshot": true
+        },
+        {
+          "index": 13,
+          "keyword": "And ",
+          "text": "I select the brand logo tile on the create project page",
+          "status": "passed",
+          "durationNs": 347953798,
+          "durationMs": 348,
+          "hasScreenshot": true
+        },
+        {
+          "index": 14,
+          "keyword": "And ",
+          "text": "I click Launch Project on the create project page",
+          "status": "passed",
+          "durationNs": 805837199,
+          "durationMs": 806,
+          "hasScreenshot": true
+        },
+        {
+          "index": 15,
+          "keyword": "Then ",
+          "text": "I should see the newly created project in listing",
+          "status": "failed",
+          "durationNs": 30200208100,
+          "durationMs": 30200,
+          "hasScreenshot": true
+        }
+      ]
+    }
+  ],
+  "aiTokenUsage": {
+    "inputTokens": 983,
+    "outputTokens": 1216,
+    "totalTokens": 2199
+  }
+}

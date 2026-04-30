@@ -72,6 +72,13 @@ function fallbackAnalysis(failure) {
   };
 }
 
+function normalizeUsage(usage) {
+  const inputTokens = Number(usage?.input_tokens ?? usage?.inputTokens ?? 0) || 0;
+  const outputTokens = Number(usage?.output_tokens ?? usage?.outputTokens ?? 0) || 0;
+  const totalTokens = Number(usage?.total_tokens ?? usage?.totalTokens ?? inputTokens + outputTokens) || (inputTokens + outputTokens);
+  return { inputTokens, outputTokens, totalTokens };
+}
+
 function buildPrompt(failure) {
   return `You are a senior QA engineer analyzing a test failure. Analyze everything below and give a detailed, specific report.
 
@@ -122,11 +129,13 @@ async function analyzeWithClaude(client, failure) {
   if (!parsed) return fallbackAnalysis(failure);
 
   const sev = String(parsed.severity || "medium").toLowerCase();
+  const usage = normalizeUsage(message?.usage);
   return {
     whatHappened: String(parsed.whatHappened || fallbackAnalysis(failure).whatHappened),
     rootCause: String(parsed.rootCause || fallbackAnalysis(failure).rootCause),
     developerSuggestions: Array.isArray(parsed.developerSuggestions) ? parsed.developerSuggestions.map(String) : fallbackAnalysis(failure).developerSuggestions,
     severity: ["low", "medium", "high"].includes(sev) ? sev : "medium",
+    tokenUsage: usage,
   };
 }
 
@@ -146,6 +155,11 @@ async function main() {
   const client = hasApi ? new Anthropic({ apiKey }) : null;
 
   const analyzed = [];
+  const usageTotals = {
+    inputTokens: 0,
+    outputTokens: 0,
+    totalTokens: 0,
+  };
   for (const failure of failures) {
     let aiAnalysis = fallbackAnalysis(failure);
     if (client) {
@@ -157,6 +171,11 @@ async function main() {
       }
     }
     const enriched = { ...failure, aiAnalysis };
+    const usage = normalizeUsage(aiAnalysis?.tokenUsage);
+    enriched.aiTokenUsage = usage;
+    usageTotals.inputTokens += usage.inputTokens;
+    usageTotals.outputTokens += usage.outputTokens;
+    usageTotals.totalTokens += usage.totalTokens;
     analyzed.push(enriched);
 
     const ticket = toTicketKey(failure);
@@ -174,12 +193,26 @@ async function main() {
         errorMessage: failure?.error?.message || "",
         screenshotRelative: failure?.screenshotRelative || "",
         aiAnalysis,
+        aiTokenUsage: usage,
       }],
     };
     fs.writeFileSync(analysisPath, JSON.stringify(next, null, 2), "utf8");
   }
 
   fs.writeFileSync(ndjsonPath, analyzed.map((f) => JSON.stringify(f)).join("\n") + "\n", "utf8");
+  fs.writeFileSync(
+    path.join(lastRunDir, "ai-usage.json"),
+    JSON.stringify(
+      {
+        generatedAt: new Date().toISOString(),
+        model: "claude-sonnet-4-5",
+        ...usageTotals,
+      },
+      null,
+      2
+    ),
+    "utf8"
+  );
   console.log(`[ai-analyze] Updated failures: ${ndjsonPath}`);
 }
 

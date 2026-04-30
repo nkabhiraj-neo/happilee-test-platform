@@ -16,6 +16,7 @@ const videosDir = path.join(root, "e2e", "reports", "videos");
 const outMd = path.join(root, "e2e", "reports", "E2E-FAILURE-REPORT.md");
 const outSummaryJson = path.join(root, "e2e", "reports", "failures", "last-run", "summary.json");
 const outAnalysisDir = path.join(root, "e2e", "reports", "analysis");
+const docsReportsDir = path.join(root, "docs", "reports");
 const cucumberSources = [
   path.join(root, "codebase", "_hap_fe_project", "artifacts", "cucumber", "cucumber.json"),
   path.join(root, "codebase", "_hap_fe_auth", "artifacts", "cucumber", "cucumber.json"),
@@ -131,6 +132,23 @@ function enrichFailuresFromCucumber(failures) {
     const actualResult = network?.exact
       ? `API ${network.exact.method} ${network.exact.status} ${network.exact.url} failed, then UI timed out waiting for Project List heading.`
       : "Project List heading did not appear within timeout.";
+    const stepTimeline = (scenario.steps || [])
+      .filter((s) => !s.hidden)
+      .map((s, idx) => {
+        const status = String(s.result?.status || "unknown").toLowerCase();
+        const durationNs = Number(s.result?.duration || 0);
+        const screenshotEmbedding = (s.embeddings || []).find((e) => String(e.mime_type || "").startsWith("image/"));
+        return {
+          index: idx + 1,
+          keyword: s.keyword || "",
+          text: s.name || "",
+          status,
+          durationNs,
+          durationMs: durationNs ? Math.round(durationNs / 1e6) : 0,
+          hasScreenshot: Boolean(screenshotEmbedding?.data),
+        };
+      });
+
     return {
       ...f,
       failedStepText: failedStep ? `${failedStep.keyword || ""}${failedStep.name || ""}`.trim() : f.failedStepText,
@@ -145,8 +163,21 @@ function enrichFailuresFromCucumber(failures) {
         : null,
       expectedResult,
       actualResult,
+      stepTimeline,
     };
   });
+}
+
+function sumAiTokenUsage(failures) {
+  const base = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+  for (const failure of failures || []) {
+    const usage = failure?.aiTokenUsage || failure?.aiAnalysis?.tokenUsage || {};
+    base.inputTokens += Number(usage.inputTokens || usage.input_tokens || 0) || 0;
+    base.outputTokens += Number(usage.outputTokens || usage.output_tokens || 0) || 0;
+    base.totalTokens += Number(usage.totalTokens || usage.total_tokens || 0) || 0;
+  }
+  if (!base.totalTokens) base.totalTokens = base.inputTokens + base.outputTokens;
+  return base;
 }
 
 function runAiFailureAnalysis() {
@@ -194,6 +225,7 @@ function toReportsRelative(value) {
 function buildBugAnalysis(summary) {
   const failures = Array.isArray(summary.failures) ? summary.failures : [];
   const status = failures.length ? "failed" : "passed";
+  const aiUsage = sumAiTokenUsage(failures);
   const scenarioRows = failures.map((f) => {
     const where = f.failureExplanation?.whereItFailed || "";
     const screenshot = toReportsRelative(f.screenshotRelative);
@@ -209,6 +241,8 @@ function buildBugAnalysis(summary) {
       aiRootCause: f.aiAnalysis?.rootCause || "",
       aiSuggestions: Array.isArray(f.aiAnalysis?.developerSuggestions) ? f.aiAnalysis.developerSuggestions : [],
       aiSeverity: f.aiAnalysis?.severity || "medium",
+      tokenUsage: f.aiTokenUsage || f.aiAnalysis?.tokenUsage || null,
+      stepTimeline: Array.isArray(f.stepTimeline) ? f.stepTimeline : [],
       notes: [
         `Where failed: ${where || "n/a"}`,
         `Exact error: ${f.error?.fullMessage || f.error?.message || "n/a"}`,
@@ -225,6 +259,7 @@ function buildBugAnalysis(summary) {
     cucumberReport: "report.html",
     video: toReportsRelative(summary.videoRelative),
     failuresCount: failures.length,
+    aiTokenUsage: aiUsage,
     scenarios: scenarioRows,
     notes: failures.length
       ? [
@@ -242,6 +277,25 @@ function writeUnifiedDashboardAssets(summary) {
   fs.writeFileSync(path.join(outAnalysisDir, "BUG-10.json"), JSON.stringify(bugData, null, 2), "utf8");
 }
 
+function mirrorDashboardTelemetry(summary) {
+  const usage = summary?.aiTokenUsage || sumAiTokenUsage(summary?.failures || []);
+  fs.mkdirSync(path.join(docsReportsDir, "failures", "last-run"), { recursive: true });
+  fs.writeFileSync(
+    path.join(docsReportsDir, "ai-usage.json"),
+    JSON.stringify(
+      {
+        generatedAt: summary.generatedAt || new Date().toISOString(),
+        source: "post-e2e-failures",
+        ...usage,
+      },
+      null,
+      2
+    ),
+    "utf8"
+  );
+  fs.writeFileSync(path.join(docsReportsDir, "failures", "last-run", "summary.json"), JSON.stringify(summary, null, 2), "utf8");
+}
+
 function adfParagraph(text) {
   return {
     type: "paragraph",
@@ -250,6 +304,9 @@ function adfParagraph(text) {
 }
 
 function buildDescriptionAdf(failure, videoAbsPath = "") {
+  const usage = failure.aiTokenUsage || failure.aiAnalysis?.tokenUsage || {};
+  const usageText = `AI token usage: input=${Number(usage.inputTokens || usage.input_tokens || 0) || 0}, output=${Number(usage.outputTokens || usage.output_tokens || 0) || 0}, total=${Number(usage.totalTokens || usage.total_tokens || 0) || 0}`;
+  const timelineLines = (failure.stepTimeline || []).map((s) => `#${s.index} [${s.status}] ${s.keyword || ""}${s.text || ""} (${s.durationMs || 0}ms)${s.hasScreenshot ? " [shot]" : ""}`);
   const parts = [
     `Scenario: ${failure.scenarioName}`,
     `When: ${failure.failedAt}`,
@@ -274,6 +331,9 @@ function buildDescriptionAdf(failure, videoAbsPath = "") {
     "AI analysis - developer suggestions:",
     ...((failure.aiAnalysis?.developerSuggestions || []).map((s) => `• ${s}`)),
     `AI severity: ${failure.aiAnalysis?.severity || "medium"}`,
+    usageText,
+    "Step timeline:",
+    ...(timelineLines.length ? timelineLines : ["No step timeline available"]),
     "Tracked URLs:",
     JSON.stringify(failure.lastTrackedRequests || {}, null, 2),
     failure.exactApiFailure?.curlCommand
@@ -411,6 +471,8 @@ async function githubCreateIssue(failure, videoAbsPath) {
     return null;
   }
 
+  const usage = failure.aiTokenUsage || failure.aiAnalysis?.tokenUsage || {};
+  const timelineLines = (failure.stepTimeline || []).map((s) => `- #${s.index} [${s.status}] ${s.keyword || ""}${s.text || ""} (${s.durationMs || 0}ms)${s.hasScreenshot ? " [screenshot]" : ""}`);
   const apiHint = failure.exactApiFailure?.responseMessage
     ? ` - ${String(failure.exactApiFailure.responseMessage).slice(0, 80)}`
     : "";
@@ -450,6 +512,14 @@ async function githubCreateIssue(failure, videoAbsPath) {
     ...(Array.isArray(failure.aiAnalysis?.developerSuggestions)
       ? ["- AI developer suggestions:", ...failure.aiAnalysis.developerSuggestions.map((s) => `  - ${s}`)]
       : []),
+    "",
+    "AI token usage:",
+    `- inputTokens: ${Number(usage.inputTokens || usage.input_tokens || 0) || 0}`,
+    `- outputTokens: ${Number(usage.outputTokens || usage.output_tokens || 0) || 0}`,
+    `- totalTokens: ${Number(usage.totalTokens || usage.total_tokens || 0) || 0}`,
+    "",
+    "Step timeline:",
+    ...(timelineLines.length ? timelineLines : ["- n/a"]),
     "",
     "Tracked API URLs:",
     "```json",
@@ -560,11 +630,13 @@ async function main() {
     generatedAt: new Date().toISOString(),
     videoRelative: video,
     failures,
+    aiTokenUsage: sumAiTokenUsage(failures),
   };
   fs.mkdirSync(path.dirname(outSummaryJson), { recursive: true });
   fs.writeFileSync(outSummaryJson, JSON.stringify(summary, null, 2), "utf8");
   console.log("[post-e2e] Wrote", path.relative(root, outSummaryJson));
   writeUnifiedDashboardAssets(summary);
+  mirrorDashboardTelemetry(summary);
 
   const jiraEnabled = process.env.E2E_JIRA_CREATE === "1" || process.env.E2E_JIRA_CREATE === "true";
   const githubEnabled = process.env.E2E_GITHUB_CREATE === "1" || process.env.E2E_GITHUB_CREATE === "true";

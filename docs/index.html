@@ -2962,6 +2962,7 @@
       const [videoIndex, setVideoIndex] = useState({});
       const [runMeta, setRunMeta] = useState(null);
       const [selectedScenarioId, setSelectedScenarioId] = useState(null);
+      const [aiUsage, setAiUsage] = useState({ inputTokens: 0, outputTokens: 0, totalTokens: 0, generatedAt: null });
       const prevStats = useRef(null);
 
       useEffect(() => {
@@ -2970,6 +2971,20 @@
           .then(data => setVideoIndex(data))
           .catch(() => setVideoIndex({}));
       }, []);
+      useEffect(() => {
+        fetch('./reports/ai-usage.json?t=' + Date.now(), { cache: 'no-store' })
+          .then(r => (r.ok ? r.json() : null))
+          .then(data => {
+            if (!data) return;
+            setAiUsage({
+              inputTokens: Number(data.inputTokens || 0) || 0,
+              outputTokens: Number(data.outputTokens || 0) || 0,
+              totalTokens: Number(data.totalTokens || 0) || 0,
+              generatedAt: data.generatedAt || null,
+            });
+          })
+          .catch(() => setAiUsage({ inputTokens: 0, outputTokens: 0, totalTokens: 0, generatedAt: null }));
+      }, [selectedBlock, activeId]);
       const loadRunHistory = useCallback(() => {
         fetch('./reports/run-history.json?t=' + Date.now(), { cache: 'no-store' })
           .then(r => r.ok ? r.json() : [])
@@ -3206,9 +3221,20 @@
                   <span style={{fontSize:'11px', padding:'4px 10px', borderRadius:'999px', background:'#eef2ff', color:'#4338ca', fontWeight:700}}>
                     Module: {MODULE_META[selectedBlock]?.label}
                   </span>
+                  <span style={{fontSize:'11px', padding:'4px 10px', borderRadius:'999px', background:'#ede9fe', color:'#5b21b6', fontWeight:700}}>
+                    AI Tokens: {Number(aiUsage.totalTokens || 0).toLocaleString('en-IN')}
+                  </span>
+                  <span style={{fontSize:'11px', padding:'4px 10px', borderRadius:'999px', background:'#e0f2fe', color:'#075985', fontWeight:700}}>
+                    In/Out: {Number(aiUsage.inputTokens || 0).toLocaleString('en-IN')} / {Number(aiUsage.outputTokens || 0).toLocaleString('en-IN')}
+                  </span>
                   {curEntry && (
                     <span style={{fontSize:'11px', padding:'4px 10px', borderRadius:'999px', background:'#f1f5f9', color:'#334155', fontWeight:700}}>
                       Active Run {shortRunId(curEntry.id)}
+                    </span>
+                  )}
+                  {aiUsage.generatedAt && (
+                    <span style={{fontSize:'11px', padding:'4px 10px', borderRadius:'999px', background:'#f8fafc', color:'#334155', fontWeight:700}}>
+                      Token updated: {fmtRunDateShort(aiUsage.generatedAt)}
                     </span>
                   )}
                 </div>
