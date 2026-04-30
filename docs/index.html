@@ -228,20 +228,22 @@
       position: sticky;
       top: 3px;
       z-index: 100;
-      height: 60px;
+      min-height: 68px;
       padding: 0 32px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: rgba(255, 255, 255, 0.88);
+      background: linear-gradient(120deg, rgba(255, 255, 255, 0.9), rgba(240, 249, 255, 0.92));
       backdrop-filter: blur(24px);
       -webkit-backdrop-filter: blur(24px);
       border-bottom: 1px solid var(--border);
-      transition: background .4s;
+      box-shadow: 0 12px 28px rgba(15, 23, 42, 0.08);
+      transition: background .4s, box-shadow .4s;
     }
 
     [data-theme="dark"] .hdr {
-      background: rgba(15, 24, 41, 0.92);
+      background: linear-gradient(120deg, rgba(15, 24, 41, 0.94), rgba(8, 47, 73, 0.88));
+      box-shadow: 0 12px 30px rgba(2, 6, 23, 0.6);
     }
 
     .logo {
@@ -723,11 +725,11 @@
 
     .module-spotlight {
       margin-bottom: 14px;
-      padding: 14px 16px;
+      padding: 16px 18px;
       border-radius: var(--r);
-      border: 1px solid rgba(99, 102, 241, 0.35);
-      background: linear-gradient(140deg, rgba(99, 102, 241, 0.13), rgba(255, 255, 255, 0.85) 50%, rgba(236, 72, 153, 0.08));
-      box-shadow: var(--shadow-sm);
+      border: 1px solid rgba(99, 102, 241, 0.42);
+      background: linear-gradient(130deg, rgba(99, 102, 241, 0.18), rgba(255, 255, 255, 0.9) 44%, rgba(56, 189, 248, 0.12));
+      box-shadow: 0 10px 24px rgba(99, 102, 241, 0.16);
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -1999,6 +2001,18 @@
       _hap_fe_project: { label: 'Project', technical: '_hap_fe_project' }
     };
     const BLOCKS = [{ id: '_hap_fe_project', label: MODULE_META._hap_fe_project.label, url: './reports/_hap_fe_project.json' }, { id: '_hap_fe_auth', label: MODULE_META._hap_fe_auth.label, url: './reports/_hap_fe_auth.json' }];
+    const ROUTE_TO_BLOCK = { projects: '_hap_fe_project', project: '_hap_fe_project', auth: '_hap_fe_auth' };
+    const BLOCK_TO_ROUTE = { _hap_fe_project: 'projects', _hap_fe_auth: 'auth' };
+    const readRoute = () => {
+      const raw = String(window.location.hash || '#/dashboard').replace(/^#\/?/, '').trim().toLowerCase();
+      if (!raw || raw === 'dashboard') return { page: 'dashboard', blockId: null };
+      return { page: 'module', blockId: ROUTE_TO_BLOCK[raw] || null };
+    };
+    const writeRoute = (next) => {
+      const path = String(next || '').replace(/^\/+/, '');
+      const wanted = `#/${path || 'dashboard'}`;
+      if (window.location.hash !== wanted) window.location.hash = wanted;
+    };
 
     function Donut({ passed, failed, skipped, total }) {
       const R = 44, C = 276.5;
@@ -2931,11 +2945,11 @@
 
     function App() {
       const [theme, setTheme] = useState(() => localStorage.getItem('hq_theme') || 'light');
-      const [selectedBlock, setSelectedBlock] = useState(() => localStorage.getItem('hq_block') || '_hap_fe_project');
+      const [selectedBlock, setSelectedBlock] = useState(() => readRoute().blockId || localStorage.getItem('hq_block') || '_hap_fe_project');
+      const [routePage, setRoutePage] = useState(() => readRoute().page);
       const [features, setFeatures] = useState(null);
       const [fileName, setFileName] = useState(null);
       const [filter, setFilter] = useState('all');
-      const [drag, setDrag] = useState(false);
       const [history, setHistory] = useState([]);
       const [activeId, setActiveId] = useState(null);
       const [autoLoadBlocked, setAutoLoadBlocked] = useState(false);
@@ -2965,7 +2979,6 @@
           })
           .catch(() => setHistory([]));
       }, []);
-      const fref = useRef();
       const blockInfo = BLOCKS.find(b => b.id === selectedBlock);
       const reportUrl = blockInfo?.url || './reports/_hap_fe_project.json';
 
@@ -3009,12 +3022,35 @@
       useEffect(() => { localStorage.setItem('hq_block', selectedBlock); prevStats.current = null; loadRunHistory(); loadFromUrl(selectedBlock); }, [selectedBlock, loadRunHistory]);
       useEffect(() => { localStorage.setItem('hq_live', liveMode); }, [liveMode]);
       useEffect(() => {
+        const onHashChange = () => {
+          const route = readRoute();
+          setRoutePage(route.page);
+          if (route.blockId && route.blockId !== selectedBlock) {
+            prevStats.current = null;
+            setSelectedBlock(route.blockId);
+            setNotificationBanner(null);
+          }
+        };
+        onHashChange();
+        window.addEventListener('hashchange', onHashChange);
+        return () => window.removeEventListener('hashchange', onHashChange);
+      }, [selectedBlock]);
+      useEffect(() => {
         if (!liveMode) return;
         const iv = setInterval(() => { setCountdown(c => { if (c <= 1) { loadFromUrl(selectedBlock); return 5; } return c - 1; }); }, 1000);
         return () => clearInterval(iv);
       }, [liveMode, selectedBlock, loadFromUrl]);
 
-      const onBlockChange = e => { const v = e.target.value; if (v) { prevStats.current = null; setSelectedBlock(v); setNotificationBanner(null); } };
+      const onBlockChange = e => {
+        const v = e.target.value;
+        if (v) {
+          prevStats.current = null;
+          setSelectedBlock(v);
+          setRoutePage('module');
+          setNotificationBanner(null);
+          writeRoute(BLOCK_TO_ROUTE[v] || 'dashboard');
+        }
+      };
       const onRunChange = e => {
         const runId = e.target.value;
         const run = history.find(h => String(h.id) === String(runId));
@@ -3034,14 +3070,6 @@
             }
           });
       };
-
-      const processFile = useCallback(file => {
-        const r = new FileReader();
-        r.onload = e => { try { const d = JSON.parse(e.target.result); const fs = Array.isArray(d) ? d : (d.features || []); setFeatures(fs); setFileName(file.name); setActiveId(Date.now()); setFilter('all'); setLastLoadedAt(Date.now()); } catch { alert('Invalid JSON. Please upload a valid cucumber-report.json'); } };
-        r.readAsText(file);
-      }, [selectedBlock]);
-
-      const onDrop = useCallback(e => { e.preventDefault(); setDrag(false); const f = e.dataTransfer.files[0]; if (f) processFile(f); }, [processFile]);
 
       const st = useMemo(() => features ? stats(features) : null, [features]);
       const dur = useMemo(() => features ? totalNs(features) : 0, [features]);
@@ -3076,7 +3104,7 @@
       const selectedRow = scenarioRows.find(r => r.id === selectedScenarioId) || null;
 
       return (
-        <div onDragOver={e => { e.preventDefault(); setDrag(true); }} onDragLeave={() => setDrag(false)} onDrop={onDrop}>
+        <div>
           <div className="mesh" />
           <div className="topline" />
 
@@ -3086,6 +3114,9 @@
               <div><div className="lname">Happilee</div><div className="ltag">QA Dashboard</div></div>
             </div>
             <div className="hactions">
+              <button className={`btn ${routePage === 'dashboard' ? 'btnp' : ''}`} onClick={() => { setRoutePage('dashboard'); writeRoute('dashboard'); }}>🏠 Dashboard</button>
+              <button className={`btn ${routePage === 'module' && selectedBlock === '_hap_fe_project' ? 'btnp' : ''}`} onClick={() => { prevStats.current = null; setSelectedBlock('_hap_fe_project'); setRoutePage('module'); writeRoute('projects'); }}>Projects</button>
+              <button className={`btn ${routePage === 'module' && selectedBlock === '_hap_fe_auth' ? 'btnp' : ''}`} onClick={() => { prevStats.current = null; setSelectedBlock('_hap_fe_auth'); setRoutePage('module'); writeRoute('auth'); }}>Auth</button>
               <select className="block-select" value={selectedBlock} onChange={onBlockChange}>
                 {BLOCKS.map(b => <option key={b.id} value={b.id} title={MODULE_META[b.id]?.technical}>{b.label}</option>)}
               </select>
@@ -3108,14 +3139,25 @@
               {features && liveMode && <div className="livepill" style={{ marginRight: 4 }}>{loading ? '🔄 Tests running...' : countdown > 1 ? `Refreshing in ${countdown}s...` : '✓ Up to date'}</div>}
               {features && <button className="btn btnp" onClick={() => loadFromUrl(selectedBlock)} disabled={loading}>🔄 Refresh</button>}
               <button className={`btn ${liveMode ? 'btnp' : ''}`} onClick={() => { const next = !liveMode; setLiveMode(next); localStorage.setItem('hq_live', String(next)); }} title={liveMode ? 'Live monitor ON' : 'Live monitor OFF'}>{liveMode ? '🟢 Live ON' : '⚫ Live OFF'}</button>
-              <button className="btn" onClick={() => fref.current.click()} title="Upload report (fallback)">⬆ Upload</button>
               <button className="btn btni" onClick={() => setTheme(t => t === 'light' ? 'dark' : 'light')}>{theme === 'light' ? '🌙' : '☀️'}</button>
-              <input ref={fref} type="file" accept=".json" style={{ display: 'none' }} onChange={e => { const f = e.target.files[0]; if (f) processFile(f); e.target.value = ''; }} />
             </div>
           </header>
 
           <main className="main">
-            {liveMode && (
+            {routePage === 'dashboard' && (
+              <div className="dropzone" style={{ cursor: 'default', marginBottom: 18 }}>
+                <div className="dtitle afu">Dashboard Analysis</div>
+                <div className="ddesc afu1" style={{ maxWidth: 840, margin: '0 auto 14px' }}>
+                  Open a module workspace to inspect latest run first, then full run history with AI triage and evidence.
+                </div>
+                <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+                  <button className="dbtn afu2" onClick={() => { prevStats.current = null; setSelectedBlock('_hap_fe_project'); setRoutePage('module'); writeRoute('projects'); }}>Open Projects Analysis</button>
+                  <button className="dbtn afu3" onClick={() => { prevStats.current = null; setSelectedBlock('_hap_fe_auth'); setRoutePage('module'); writeRoute('auth'); }}>Open Auth Analysis</button>
+                </div>
+                <div className="dhint afu4">Route examples: <code>#/projects</code> · <code>#/auth</code></div>
+              </div>
+            )}
+            {routePage === 'module' && liveMode && (
               <div className="afu" style={{ marginBottom: 20 }}>
                 <div className="secrow" style={{ marginBottom: 12 }}>
                   <span className="sectitle">Live Monitor</span>
@@ -3124,8 +3166,8 @@
                 <LiveMonitor />
               </div>
             )}
-            {!features && (
-              <div className={`dropzone ${drag ? 'dg' : ''}`} onClick={() => !loading && fref.current.click()}>
+            {routePage === 'module' && !features && (
+              <div className="dropzone" style={{ cursor: 'default' }}>
                 <div className="dorb">📊</div>
                 {loading ? (
                   <div className="dtitle afu">Loading report...</div>
@@ -3139,21 +3181,19 @@
                       <div className="errblk" style={{ margin: '0 auto 20px', maxWidth: 480 }}>
                         <div className="errhdr"><span>⚠</span><span className="errtxt">Auto-load blocked by browser</span></div>
                         <div className="errbody" style={{ background: 'transparent', color: 'inherit', whiteSpace: 'normal' }}>
-                          Either open via a local server (<code>cd docs && npm run serve</code>) or drag and drop a report below.
+                          Open via a local server (<code>cd docs && npm run serve</code>) and run tests to generate reports.
                         </div>
                       <div style={{ padding: '8px 12px', borderTop: '1px solid var(--fail-ring)' }}>
                         <button className="btn" style={{ fontSize: 12 }} onClick={e => { e.stopPropagation(); loadFromUrl(); }}>🔄 Retry fetch</button>
                       </div>
                     </div>
                   )}
-                  <div className="dhint afu2">Or manually upload <code>cucumber-report.json</code></div>
-                  <button className="dbtn afu3" onClick={e => { e.stopPropagation(); fref.current.click(); }}>⬆ Choose File</button>
-                  <div className="dhint afu4">Supports · _hap_fe_auth · _hap_fe_project · any Cucumber.js JSON</div>
+                  <div className="dhint afu2">Expected sources: <code>docs/reports/_hap_fe_project.json</code> and <code>docs/reports/_hap_fe_auth.json</code></div>
                 </>)}
               </div>
             )}
 
-            {features && st && (<>
+            {routePage === 'module' && features && st && (<>
               {notificationBanner && <div className={`notif-banner ${notificationBanner.type}`}>{notificationBanner.msg}</div>}
               <div className="module-spotlight afu">
                 <div>
@@ -3293,7 +3333,7 @@
               )}
             </>)}
 
-            {!features && history.length > 0 && (
+            {routePage === 'module' && !features && history.length > 0 && (
               <div style={{ marginTop: 32 }}>
                 <div className="secrow"><span className="sectitle">Previous Runs</span></div>
                 <div className="hgrid">
