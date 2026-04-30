@@ -4,6 +4,7 @@ import readline from 'readline';
 import { execSync } from 'child_process';
 
 const RUN_ID = Date.now();
+const SESSION_STARTED_AT = new Date().toISOString();
 const modules = [
   { name: 'auth', dir: 'codebase/_hap_fe_auth' },
   { name: 'project', dir: 'codebase/_hap_fe_project' }
@@ -175,6 +176,79 @@ const KNOWN_BLOCKERS = [
   'MLR-203: Yopmail CAPTCHA blocks automated OTP fetch — this is an ENVIRONMENT_ISSUE not a real bug',
   'Timeout errors on yopmail.com are caused by bot detection CAPTCHA'
 ];
+
+function safeReadJson(filePath, fallback = null) {
+  try {
+    if (!fs.existsSync(filePath)) return fallback;
+    return JSON.parse(fs.readFileSync(filePath, 'utf8'));
+  } catch {
+    return fallback;
+  }
+}
+
+function parseUsageShape(raw) {
+  const input = Number(raw?.inputTokens ?? raw?.input_tokens ?? raw?.prompt_tokens ?? 0) || 0;
+  const output = Number(raw?.outputTokens ?? raw?.output_tokens ?? raw?.completion_tokens ?? 0) || 0;
+  const total = Number(raw?.totalTokens ?? raw?.total_tokens ?? (input + output)) || (input + output);
+  return { inputTokens: input, outputTokens: output, totalTokens: total };
+}
+
+function readPipelineUsage() {
+  const usage = safeReadJson(path.join('docs', 'reports', 'ai-usage.json'), {});
+  return parseUsageShape(usage || {});
+}
+
+function readCursorUsage() {
+  const byDefaultPath = path.join('docs', 'reports', 'cursor-usage.json');
+  const customPath = String(process.env.CURSOR_USAGE_JSON_PATH || '').trim();
+  const usagePath = customPath || byDefaultPath;
+  const usage = safeReadJson(usagePath, null);
+  if (!usage) {
+    return {
+      source: usagePath,
+      available: false,
+      usage: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+    };
+  }
+  return {
+    source: usagePath,
+    available: true,
+    usage: parseUsageShape(usage),
+  };
+}
+
+function writeSessionUsageLedger({ pushStartedAt, pushCompletedAt, pushSuccess, pushError = '' }) {
+  const pipeline = readPipelineUsage();
+  const cursor = readCursorUsage();
+  const grandTotal = {
+    inputTokens: pipeline.inputTokens + cursor.usage.inputTokens,
+    outputTokens: pipeline.outputTokens + cursor.usage.outputTokens,
+    totalTokens: pipeline.totalTokens + cursor.usage.totalTokens,
+  };
+  const payload = {
+    runId: RUN_ID,
+    generatedAt: new Date().toISOString(),
+    sessionStartedAt: SESSION_STARTED_AT,
+    pushStartedAt: pushStartedAt || null,
+    pushCompletedAt: pushCompletedAt || null,
+    pushSuccess: Boolean(pushSuccess),
+    pushError: pushError || null,
+    tokenUsage: {
+      pipeline,
+      cursor: {
+        source: cursor.source,
+        available: cursor.available,
+        ...cursor.usage,
+      },
+      grandTotal,
+    },
+  };
+  const runUsagePath = path.join('docs', 'reports', 'runs', String(RUN_ID), 'session-usage.json');
+  fs.mkdirSync(path.dirname(runUsagePath), { recursive: true });
+  fs.writeFileSync(runUsagePath, JSON.stringify(payload, null, 2));
+  fs.writeFileSync(path.join('docs', 'reports', 'session-usage-latest.json'), JSON.stringify(payload, null, 2));
+  console.log(`✅ Wrote session usage ledger: ${runUsagePath}`);
+}
 
 async function analyzeFailure(scenario, featureName, videoIndex) {
   const mlrTag = (scenario.tags || [])
@@ -401,13 +475,25 @@ if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'your_key_here') {
 }
 
 function doGitPush() {
+  const pushStartedAt = new Date().toISOString();
   try {
     console.log('\n🚀 Pushing to GitHub...');
     execSync('git add docs/', { stdio: 'inherit' });
     execSync(`git commit -m "test: sync run ${RUN_ID}"`, { stdio: 'inherit' });
     execSync('git push origin main', { stdio: 'inherit' });
+    writeSessionUsageLedger({
+      pushStartedAt,
+      pushCompletedAt: new Date().toISOString(),
+      pushSuccess: true,
+    });
     console.log('✅ Pushed to GitHub — dashboard will update shortly');
   } catch (e) {
+    writeSessionUsageLedger({
+      pushStartedAt,
+      pushCompletedAt: new Date().toISOString(),
+      pushSuccess: false,
+      pushError: String(e?.message || e),
+    });
     console.error('❌ Git push failed:', e.message);
   }
 }

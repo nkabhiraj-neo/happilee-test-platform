@@ -2963,6 +2963,11 @@
       const [runMeta, setRunMeta] = useState(null);
       const [selectedScenarioId, setSelectedScenarioId] = useState(null);
       const [aiUsage, setAiUsage] = useState({ inputTokens: 0, outputTokens: 0, totalTokens: 0, generatedAt: null });
+      const [sessionUsage, setSessionUsage] = useState({
+        pipeline: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+        cursor: { available: false, inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+        grandTotal: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+      });
       const prevStats = useRef(null);
 
       useEffect(() => {
@@ -2985,6 +2990,35 @@
           })
           .catch(() => setAiUsage({ inputTokens: 0, outputTokens: 0, totalTokens: 0, generatedAt: null }));
       }, [selectedBlock, activeId]);
+      useEffect(() => {
+        const runScoped = activeId ? `./reports/runs/${activeId}/session-usage.json?t=` + Date.now() : null;
+        const latestPath = './reports/session-usage-latest.json?t=' + Date.now();
+        const applyData = (data) => {
+          if (!data?.tokenUsage) return false;
+          setSessionUsage({
+            pipeline: data.tokenUsage.pipeline || { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+            cursor: data.tokenUsage.cursor || { available: false, inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+            grandTotal: data.tokenUsage.grandTotal || { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+          });
+          return true;
+        };
+        const load = async () => {
+          try {
+            if (runScoped) {
+              const r1 = await fetch(runScoped, { cache: 'no-store' });
+              if (r1.ok && applyData(await r1.json())) return;
+            }
+            const r2 = await fetch(latestPath, { cache: 'no-store' });
+            if (r2.ok && applyData(await r2.json())) return;
+          } catch {}
+          setSessionUsage({
+            pipeline: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+            cursor: { available: false, inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+            grandTotal: { inputTokens: 0, outputTokens: 0, totalTokens: 0 },
+          });
+        };
+        load();
+      }, [activeId]);
       const loadRunHistory = useCallback(() => {
         fetch('./reports/run-history.json?t=' + Date.now(), { cache: 'no-store' })
           .then(r => r.ok ? r.json() : [])
@@ -3224,8 +3258,14 @@
                   <span style={{fontSize:'11px', padding:'4px 10px', borderRadius:'999px', background:'#ede9fe', color:'#5b21b6', fontWeight:700}}>
                     AI Tokens: {Number(aiUsage.totalTokens || 0).toLocaleString('en-IN')}
                   </span>
+                  <span style={{fontSize:'11px', padding:'4px 10px', borderRadius:'999px', background:'#fee2e2', color:'#991b1b', fontWeight:700}}>
+                    End-to-end Tokens: {Number(sessionUsage.grandTotal?.totalTokens || 0).toLocaleString('en-IN')}
+                  </span>
                   <span style={{fontSize:'11px', padding:'4px 10px', borderRadius:'999px', background:'#e0f2fe', color:'#075985', fontWeight:700}}>
                     In/Out: {Number(aiUsage.inputTokens || 0).toLocaleString('en-IN')} / {Number(aiUsage.outputTokens || 0).toLocaleString('en-IN')}
+                  </span>
+                  <span style={{fontSize:'11px', padding:'4px 10px', borderRadius:'999px', background:'#f8fafc', color:'#334155', fontWeight:700}}>
+                    Pipeline/Cursor: {Number(sessionUsage.pipeline?.totalTokens || 0).toLocaleString('en-IN')} / {Number(sessionUsage.cursor?.totalTokens || 0).toLocaleString('en-IN')}
                   </span>
                   {curEntry && (
                     <span style={{fontSize:'11px', padding:'4px 10px', borderRadius:'999px', background:'#f1f5f9', color:'#334155', fontWeight:700}}>
