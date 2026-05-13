@@ -37,7 +37,7 @@ export function TestDetailPage() {
   const [screenshotModal, setScreenshotModal] = useState<string | null>(null)
 
   const { data: runs } = useRunHistory()
-  const resolvedRunId = runId ? Number(runId) : (runs[0]?.id ?? null)
+  const resolvedRunId = runId ?? (runs[0]?.id ?? null)
   const { data: scenarios, raw, loading } = useModuleReport(resolvedRunId, mod)
   const { data: failures } = useFailures()
 
@@ -102,7 +102,7 @@ export function TestDetailPage() {
       <header className={styles.header}>
         <div className={styles.headerTop}>
           <Badge status={scenario.status} />
-          <span className={styles.runId}>Run #{String(scenario.runId).slice(-6)}</span>
+          <span className={styles.runId}>Run #{String(scenario.runId)}</span>
           {richAI?.app_component && (
             <span className={styles.componentTag}>{richAI.app_component}</span>
           )}
@@ -378,7 +378,7 @@ export function TestDetailPage() {
             <div className={styles.sideTitle}>Run Info</div>
             <div className={styles.sideRow}>
               <span>Run ID</span>
-              <span className={styles.mono}>#{String(scenario.runId).slice(-8)}</span>
+              <span className={styles.mono}>#{String(scenario.runId)}</span>
             </div>
             <div className={styles.sideRow}>
               <span>Module</span>
