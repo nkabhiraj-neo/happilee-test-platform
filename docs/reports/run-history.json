@@ -2,6 +2,7 @@
   {
     "id": 1777527451240,
     "timestamp": "2026-04-30T05:37:31.609Z",
+    "module": "full",
     "totalScenarios": 12,
     "passedScenarios": 10,
     "failedScenarios": 2
@@ -9,6 +10,7 @@
   {
     "id": 1777527625727,
     "timestamp": "2026-04-30T05:40:26.093Z",
+    "module": "full",
     "totalScenarios": 12,
     "passedScenarios": 10,
     "failedScenarios": 2
@@ -16,6 +18,7 @@
   {
     "id": 1777870774733,
     "timestamp": "2026-05-04T04:59:35.122Z",
+    "module": "full",
     "totalScenarios": 12,
     "passedScenarios": 6,
     "failedScenarios": 6
@@ -23,6 +26,7 @@
   {
     "id": 1778047235757,
     "timestamp": "2026-05-06T06:00:36.150Z",
+    "module": "full",
     "totalScenarios": 12,
     "passedScenarios": 6,
     "failedScenarios": 6
@@ -30,6 +34,7 @@
   {
     "id": 1778049185341,
     "timestamp": "2026-05-06T06:33:07.027Z",
+    "module": "full",
     "totalScenarios": 113,
     "passedScenarios": 13,
     "failedScenarios": 100
@@ -37,6 +42,7 @@
   {
     "id": "auth-test-3",
     "timestamp": "2026-05-13T06:37:55.728Z",
+    "module": "auth",
     "label": "❌ 5 failed / 12 scenarios",
     "totalScenarios": 12,
     "passedScenarios": 7,
@@ -45,49 +51,28 @@
   {
     "id": "auth-test-4",
     "timestamp": "2026-05-13T06:43:18.565Z",
-    "label": "❌ 5 failed / 12 scenarios",
-    "totalScenarios": 12,
-    "passedScenarios": 7,
-    "failedScenarios": 5
+    "module": "auth",
+    "label": "✅ All passed (5 scenarios)",
+    "totalScenarios": 5,
+    "passedScenarios": 5,
+    "failedScenarios": 0
   },
   {
     "id": "project-test-1",
     "timestamp": "2026-05-13T07:26:21.373Z",
-    "label": "❌ 5 failed / 12 scenarios",
-    "totalScenarios": 12,
-    "passedScenarios": 7,
+    "module": "project",
+    "label": "❌ 5 failed / 7 scenarios",
+    "totalScenarios": 7,
+    "passedScenarios": 2,
     "failedScenarios": 5
-  },
-  {
-    "id": "MLR-902-test-1",
-    "timestamp": "2026-05-13T07:32:59.619Z",
-    "label": "❌ 5 failed / 12 scenarios",
-    "totalScenarios": 12,
-    "passedScenarios": 7,
-    "failedScenarios": 5
-  },
-  {
-    "id": "MLR-902-test-2",
-    "timestamp": "2026-05-13T07:35:46.303Z",
-    "label": "❌ 5 failed / 12 scenarios",
-    "totalScenarios": 12,
-    "passedScenarios": 7,
-    "failedScenarios": 5
-  },
-  {
-    "id": "MLR-902-test-3",
-    "timestamp": "2026-05-13T07:38:53.719Z",
-    "label": "✅ All passed (6 scenarios)",
-    "totalScenarios": 6,
-    "passedScenarios": 6,
-    "failedScenarios": 0
   },
   {
     "id": "project-test-2",
     "timestamp": "2026-05-13T08:05:30.622Z",
-    "label": "✅ All passed (6 scenarios)",
-    "totalScenarios": 6,
-    "passedScenarios": 6,
-    "failedScenarios": 0
+    "module": "project",
+    "label": "❌ 5 failed / 7 scenarios",
+    "totalScenarios": 7,
+    "passedScenarios": 2,
+    "failedScenarios": 5
   }
 ]
