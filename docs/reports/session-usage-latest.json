@@ -1,11 +1,11 @@
 {
-  "runId": "MLR-902-test-3",
-  "generatedAt": "2026-05-13T07:38:53.740Z",
-  "sessionStartedAt": "2026-05-13T07:38:08.120Z",
-  "pushStartedAt": null,
-  "pushCompletedAt": null,
-  "pushSuccess": false,
-  "pushError": "skipped",
+  "runId": "project-test-2",
+  "generatedAt": "2026-05-13T08:05:40.722Z",
+  "sessionStartedAt": "2026-05-13T08:05:27.814Z",
+  "pushStartedAt": "2026-05-13T08:05:30.642Z",
+  "pushCompletedAt": "2026-05-13T08:05:40.721Z",
+  "pushSuccess": true,
+  "pushError": null,
   "tokenUsage": {
     "pipeline": {
       "inputTokens": 0,

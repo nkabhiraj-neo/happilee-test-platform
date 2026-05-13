@@ -15,7 +15,13 @@ export function TestsPage() {
   const { module } = useParams<{ module: string }>()
   const mod = (module as ModuleName) || 'auth'
   const navigate = useNavigate()
-  const { data: runs, loading: runsLoading } = useRunHistory()
+  const { data: allRuns, loading: runsLoading } = useRunHistory()
+  // Only show runs that belong to this module (or 'full' runs which include all modules)
+  // Old timestamp-based runs (numbers) are shown on both pages for backwards compat
+  const runs = allRuns.filter(r => {
+    if (!r.module || typeof r.id === 'number') return true
+    return r.module === mod || r.module === 'full'
+  })
   const summaries = useModuleRunSummaries(runs, mod)
   const info = moduleInfo[mod] ?? moduleInfo.auth
 
@@ -31,7 +37,7 @@ export function TestsPage() {
         </div>
         <h1 className={styles.title}>{info.label} — Run History</h1>
         <p className={styles.subtitle}>
-          {info.label}-specific results · {runs.length} total runs · click any run to view full report
+          {info.label}-specific results · {runs.length} run{runs.length !== 1 ? 's' : ''} · click any run to view full report
         </p>
       </header>
 

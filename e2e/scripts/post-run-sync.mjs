@@ -1,14 +1,56 @@
 import fs from 'fs';
 import path from 'path';
-import readline from 'readline';
 import { execSync } from 'child_process';
 
-const RUN_ID = Date.now();
-const SESSION_STARTED_AT = new Date().toISOString();
-const modules = [
+// ── Human-readable run ID ─────────────────────────────────────────────────────
+// IDs: auth-test-1, project-test-2, full-test-1, MLR-201-test-1, etc.
+const MODULE_KEY = process.env.QA_RUN_MODULE || 'full';
+const SCENARIO_TAG = process.env.QA_SCENARIO_TAG || '';
+
+function getRunId() {
+  const countersPath = 'docs/reports/run-counters.json';
+  let counters = {};
+  try {
+    if (fs.existsSync(countersPath)) counters = JSON.parse(fs.readFileSync(countersPath, 'utf8'));
+  } catch {}
+  const key = SCENARIO_TAG || MODULE_KEY;
+  const next = (counters[key] || 0) + 1;
+  counters[key] = next;
+  fs.mkdirSync('docs/reports', { recursive: true });
+  fs.writeFileSync(countersPath, JSON.stringify(counters, null, 2));
+  const label = SCENARIO_TAG ? SCENARIO_TAG : MODULE_KEY;
+  return `${label}-test-${next}`;
+}
+
+const RUN_ID = getRunId();
+const SESSION_STARTED_AT = process.env.QA_TEST_STARTED_AT || new Date().toISOString();
+
+// Reset token counter for this run (ensures no bleed-over from previous runs)
+fs.mkdirSync('docs/reports', { recursive: true });
+fs.writeFileSync('docs/reports/ai-usage.json', JSON.stringify({
+  generatedAt: new Date().toISOString(),
+  runId: RUN_ID,
+  inputTokens: 0,
+  outputTokens: 0,
+  totalTokens: 0,
+}, null, 2));
+
+// Only sync the module(s) that actually ran — prevents cross-contamination
+// MODULE_KEY is 'auth', 'project', a scenario tag like 'MLR-902', or 'full'
+const allModules = [
   { name: 'auth', dir: 'codebase/_hap_fe_auth' },
   { name: 'project', dir: 'codebase/_hap_fe_project' }
 ];
+const modules = allModules.filter(m => {
+  if (MODULE_KEY === 'full') return true;
+  if (MODULE_KEY === 'auth') return m.name === 'auth';
+  if (MODULE_KEY === 'project') return m.name === 'project';
+  // scenario tag (e.g. MLR-902) — determine by which cucumber.json is freshest
+  const jsonPath = path.join(m.dir, 'artifacts/cucumber/cucumber.json');
+  if (!fs.existsSync(jsonPath)) return false;
+  const age = Date.now() - fs.statSync(jsonPath).mtimeMs;
+  return age < 5 * 60 * 1000; // only include if modified in last 5 minutes
+});
 
 const videosDir = 'docs/reports/videos';
 if (fs.existsSync(videosDir)) {
@@ -145,12 +187,26 @@ let history = [];
 if (fs.existsSync(historyPath)) {
   history = JSON.parse(fs.readFileSync(historyPath, 'utf8'));
 }
+const failedCount = totalScenarios - totalPassed;
+const runLabel = failedCount === 0
+  ? `✅ All passed (${totalScenarios} scenarios)`
+  : `❌ ${failedCount} failed / ${totalScenarios} scenarios`;
+
+// Determine which module(s) this run covers for dashboard filtering
+const runModule = MODULE_KEY === 'full' ? 'full'
+  : MODULE_KEY === 'auth' ? 'auth'
+  : MODULE_KEY === 'project' ? 'project'
+  : modules.length === 1 ? modules[0].name  // scenario tag — use whichever module ran
+  : 'full';
+
 history.push({
   id: RUN_ID,
   timestamp: new Date().toISOString(),
+  label: runLabel,
+  module: runModule,
   totalScenarios,
   passedScenarios: totalPassed,
-  failedScenarios: totalScenarios - totalPassed
+  failedScenarios: failedCount,
 });
 fs.writeFileSync(historyPath, JSON.stringify(history, null, 2));
 console.log('✅ Updated run-history.json');
@@ -389,6 +445,13 @@ Return this exact JSON:
     const clean = text.replace(/^```json\n?/, '').replace(/\n?```$/, '').trim();
     const analysis = JSON.parse(clean);
 
+    // Capture token usage from Claude response
+    const tokenUsage = {
+      inputTokens:  data.usage?.input_tokens  || 0,
+      outputTokens: data.usage?.output_tokens || 0,
+      totalTokens:  (data.usage?.input_tokens || 0) + (data.usage?.output_tokens || 0),
+    };
+
     // Print rich terminal output
     const line = '═'.repeat(60);
     console.log('\n' + line);
@@ -405,9 +468,10 @@ Return this exact JSON:
     console.log(`\nPrevention:\n  ${analysis.prevention}`);
     console.log(`\nTicket worthy: ${analysis.ticket_worthy ? 'YES' : 'NO'}`);
     if (analysis.ticket_worthy) console.log(`Ticket title: ${analysis.ticket_title}`);
+    console.log(`\n🪙 Tokens: ${tokenUsage.inputTokens} in · ${tokenUsage.outputTokens} out · ${tokenUsage.totalTokens} total`);
     console.log(line);
 
-    return analysis;
+    return { ...analysis, _tokenUsage: tokenUsage };
   } catch (err) {
     console.error(`❌ AI analysis failed for ${mlrTag}:`, err.message);
     return null;
@@ -421,10 +485,14 @@ if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'your_key_here') {
   let anyFailures = false;
   const reports = fs.readdirSync('docs/reports').filter(f => f.endsWith('.json') && f.startsWith('_hap_fe_'));
 
+  // Per-scenario token breakdown collected across all modules
+  const tokenBreakdown = [];
+  let tokenGrandTotal = { inputTokens: 0, outputTokens: 0, totalTokens: 0 };
+
   for (const reportFile of reports) {
     const reportPath = path.join('docs/reports', reportFile);
     const moduleName = reportFile.replace('_hap_fe_', '').replace('.json', '');
-    
+
     // Load video index for this module
     const vIndexFile = path.join(videosDir, `index-${moduleName}.json`);
     const vIndex = fs.existsSync(vIndexFile) ? JSON.parse(fs.readFileSync(vIndexFile, 'utf8')) : {};
@@ -440,8 +508,28 @@ if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'your_key_here') {
 
         anyFailures = true;
         moduleFailures = true;
-        const analysis = await analyzeFailure(scenario, feature.name, vIndex);
-        if (analysis) scenario.aiAnalysis = analysis;
+        const result = await analyzeFailure(scenario, feature.name, vIndex);
+        if (result) {
+          // Strip _tokenUsage from the analysis before embedding in JSON
+          const { _tokenUsage, ...cleanAnalysis } = result;
+          scenario.aiAnalysis = cleanAnalysis;
+
+          // Track tokens per scenario
+          if (_tokenUsage) {
+            const mlrTag = (scenario.tags || []).map(t => t.name.replace('@', '')).find(t => t.startsWith('MLR-')) || '?';
+            tokenBreakdown.push({
+              module: moduleName,
+              tag: mlrTag,
+              scenario: scenario.name,
+              inputTokens:  _tokenUsage.inputTokens,
+              outputTokens: _tokenUsage.outputTokens,
+              totalTokens:  _tokenUsage.totalTokens,
+            });
+            tokenGrandTotal.inputTokens  += _tokenUsage.inputTokens;
+            tokenGrandTotal.outputTokens += _tokenUsage.outputTokens;
+            tokenGrandTotal.totalTokens  += _tokenUsage.totalTokens;
+          }
+        }
       }
     }
 
@@ -453,28 +541,59 @@ if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'your_key_here') {
     }
   }
 
+  // Save token breakdown for this run
+  if (tokenBreakdown.length > 0) {
+    const breakdown = {
+      runId: RUN_ID,
+      generatedAt: new Date().toISOString(),
+      scenarios: tokenBreakdown,
+      total: tokenGrandTotal,
+    };
+    fs.mkdirSync(`docs/reports/runs/${RUN_ID}`, { recursive: true });
+    fs.writeFileSync(`docs/reports/runs/${RUN_ID}/token-breakdown.json`, JSON.stringify(breakdown, null, 2));
+
+    // Also save to pipeline-level ai-usage.json so session ledger picks it up
+    fs.writeFileSync('docs/reports/ai-usage.json', JSON.stringify({
+      generatedAt: new Date().toISOString(),
+      runId: RUN_ID,
+      ...tokenGrandTotal,
+    }, null, 2));
+
+    // Print token table to terminal
+    console.log('\n🪙 TOKEN USAGE BREAKDOWN');
+    console.log('─'.repeat(72));
+    console.log(`${'Module'.padEnd(10)} ${'Tag'.padEnd(10)} ${'Scenario'.padEnd(36)} ${'In'.padStart(6)} ${'Out'.padStart(6)} ${'Total'.padStart(7)}`);
+    console.log('─'.repeat(72));
+    for (const s of tokenBreakdown) {
+      console.log(
+        `${s.module.padEnd(10)} ${s.tag.padEnd(10)} ${s.scenario.substring(0, 35).padEnd(36)} ` +
+        `${String(s.inputTokens).padStart(6)} ${String(s.outputTokens).padStart(6)} ${String(s.totalTokens).padStart(7)}`
+      );
+    }
+    console.log('─'.repeat(72));
+    console.log(`${'TOTAL'.padEnd(58)} ${String(tokenGrandTotal.inputTokens).padStart(6)} ${String(tokenGrandTotal.outputTokens).padStart(6)} ${String(tokenGrandTotal.totalTokens).padStart(7)}`);
+    console.log('─'.repeat(72));
+  }
+
   if (anyFailures) {
     console.log('\n✅ AI analysis injected into dashboard JSON');
-    // Ask user about ticket creation
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    rl.question('\n📋 Create Jira + GitHub tickets for failed scenarios? (yes/no): ', async (answer) => {
-      rl.close();
-      if (answer.toLowerCase() === 'yes' || answer.toLowerCase() === 'y') {
-        console.log('🎫 Creating tickets...');
-        execSync('node e2e/scripts/post-e2e-failures.mjs', { stdio: 'inherit' });
-        console.log('✅ Tickets created');
-      } else {
-        console.log('⏭️  Skipping ticket creation');
-      }
-      doGitPush();
-    });
+    if (process.env.QA_CREATE_TICKETS === '1') {
+      console.log('🎫 Creating tickets...');
+      execSync('node e2e/scripts/post-e2e-failures.mjs', { stdio: 'inherit' });
+      console.log('✅ Tickets created');
+    }
   } else {
     console.log('\n✅ All scenarios passed — no AI analysis needed');
-    doGitPush();
   }
+  doGitPush();
 }
 
 function doGitPush() {
+  if (process.env.QA_NO_PUSH === '1') {
+    console.log('\n⏭️  Skipping git push (QA_NO_PUSH=1)');
+    writeSessionUsageLedger({ pushStartedAt: null, pushCompletedAt: null, pushSuccess: false, pushError: 'skipped' });
+    return;
+  }
   const pushStartedAt = new Date().toISOString();
   try {
     console.log('\n🚀 Pushing to GitHub...');

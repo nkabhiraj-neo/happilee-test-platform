@@ -2,6 +2,7 @@ export interface RunSummary {
   id: string | number
   timestamp: string
   label?: string
+  module?: string
   totalScenarios: number
   passedScenarios: number
   failedScenarios: number
