@@ -196,7 +196,7 @@ export function TestDetailPage() {
                   <div className={styles.videoLabel}>App</div>
                   <video
                     className={styles.videoPlayer}
-                    src={`/reports/videos/${scenarioVideos.app}`}
+                    src={`/reports/runs/${resolvedRunId}/videos/${scenarioVideos.app}`}
                     controls
                     preload="metadata"
                   />
@@ -206,7 +206,7 @@ export function TestDetailPage() {
                     <div className={styles.videoLabel}>Yopmail</div>
                     <video
                       className={styles.videoPlayer}
-                      src={`/reports/videos/${scenarioVideos.yopmail}`}
+                      src={`/reports/runs/${resolvedRunId}/videos/${scenarioVideos.yopmail}`}
                       controls
                       preload="metadata"
                     />
