@@ -57,5 +57,37 @@
     "totalScenarios": 12,
     "passedScenarios": 7,
     "failedScenarios": 5
+  },
+  {
+    "id": "MLR-902-test-1",
+    "timestamp": "2026-05-13T07:32:59.619Z",
+    "label": "❌ 5 failed / 12 scenarios",
+    "totalScenarios": 12,
+    "passedScenarios": 7,
+    "failedScenarios": 5
+  },
+  {
+    "id": "MLR-902-test-2",
+    "timestamp": "2026-05-13T07:35:46.303Z",
+    "label": "❌ 5 failed / 12 scenarios",
+    "totalScenarios": 12,
+    "passedScenarios": 7,
+    "failedScenarios": 5
+  },
+  {
+    "id": "MLR-902-test-3",
+    "timestamp": "2026-05-13T07:38:53.719Z",
+    "label": "✅ All passed (6 scenarios)",
+    "totalScenarios": 6,
+    "passedScenarios": 6,
+    "failedScenarios": 0
+  },
+  {
+    "id": "project-test-2",
+    "timestamp": "2026-05-13T08:05:30.622Z",
+    "label": "✅ All passed (6 scenarios)",
+    "totalScenarios": 6,
+    "passedScenarios": 6,
+    "failedScenarios": 0
   }
 ]

@@ -1,16 +1,16 @@
 {
-  "runId": "auth-test-4",
-  "generatedAt": "2026-05-13T06:46:23.196Z",
-  "sessionStartedAt": "2026-05-13T06:42:28.863Z",
-  "pushStartedAt": "2026-05-13T06:45:34.131Z",
-  "pushCompletedAt": "2026-05-13T06:46:23.196Z",
-  "pushSuccess": true,
-  "pushError": null,
+  "runId": "MLR-902-test-3",
+  "generatedAt": "2026-05-13T07:38:53.740Z",
+  "sessionStartedAt": "2026-05-13T07:38:08.120Z",
+  "pushStartedAt": null,
+  "pushCompletedAt": null,
+  "pushSuccess": false,
+  "pushError": "skipped",
   "tokenUsage": {
     "pipeline": {
-      "inputTokens": 15416,
-      "outputTokens": 5947,
-      "totalTokens": 21363
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "totalTokens": 0
     },
     "cursor": {
       "source": "docs\\reports\\cursor-usage.json",
@@ -20,9 +20,9 @@
       "totalTokens": 0
     },
     "grandTotal": {
-      "inputTokens": 15416,
-      "outputTokens": 5947,
-      "totalTokens": 21363
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "totalTokens": 0
     }
   }
 }

@@ -1,0 +1,28 @@
+{
+  "runId": "MLR-902-test-1",
+  "generatedAt": "2026-05-13T07:35:08.835Z",
+  "sessionStartedAt": "2026-05-13T07:32:58.561Z",
+  "pushStartedAt": null,
+  "pushCompletedAt": null,
+  "pushSuccess": false,
+  "pushError": "skipped",
+  "tokenUsage": {
+    "pipeline": {
+      "inputTokens": 15416,
+      "outputTokens": 5747,
+      "totalTokens": 21163
+    },
+    "cursor": {
+      "source": "docs\\reports\\cursor-usage.json",
+      "available": false,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "totalTokens": 0
+    },
+    "grandTotal": {
+      "inputTokens": 15416,
+      "outputTokens": 5747,
+      "totalTokens": 21163
+    }
+  }
+}

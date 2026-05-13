@@ -1,0 +1,28 @@
+{
+  "runId": "project-test-1",
+  "generatedAt": "2026-05-13T07:28:37.638Z",
+  "sessionStartedAt": "2026-05-13T07:26:19.102Z",
+  "pushStartedAt": "2026-05-13T07:28:31.693Z",
+  "pushCompletedAt": "2026-05-13T07:28:37.638Z",
+  "pushSuccess": true,
+  "pushError": null,
+  "tokenUsage": {
+    "pipeline": {
+      "inputTokens": 15416,
+      "outputTokens": 5884,
+      "totalTokens": 21300
+    },
+    "cursor": {
+      "source": "docs\\reports\\cursor-usage.json",
+      "available": false,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "totalTokens": 0
+    },
+    "grandTotal": {
+      "inputTokens": 15416,
+      "outputTokens": 5884,
+      "totalTokens": 21300
+    }
+  }
+}
