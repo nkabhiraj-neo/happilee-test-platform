@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useRunHistory } from '../hooks/useRunHistory'
 import { useModuleReport } from '../hooks/useModuleReport'
@@ -10,7 +10,7 @@ import {
   ArrowLeft, CheckCircle2, XCircle, Clock, Brain,
   Terminal, Image, ChevronRight, AlertCircle, Ticket,
   GitBranch, MapPin, Wrench, ShieldAlert, Lightbulb,
-  Code2, ShieldCheck,
+  Code2, ShieldCheck, Video, Coins,
 } from 'lucide-react'
 import styles from './TestDetailPage.module.css'
 
@@ -35,6 +35,8 @@ export function TestDetailPage() {
   const mod = (module as ModuleName) || 'auth'
   const navigate = useNavigate()
   const [screenshotModal, setScreenshotModal] = useState<string | null>(null)
+  const [videoIndex, setVideoIndex] = useState<Record<string, { app: string | null; yopmail: string | null }>>({})
+  const [tokenBreakdown, setTokenBreakdown] = useState<{ scenarios: Array<{ tag: string; inputTokens: number; outputTokens: number; totalTokens: number }>; total: { inputTokens: number; outputTokens: number; totalTokens: number } } | null>(null)
 
   const { data: runs } = useRunHistory()
   const resolvedRunId = runId ?? (runs[0]?.id ?? null)
@@ -53,6 +55,29 @@ export function TestDetailPage() {
 
   // Legacy failure data — used for exactApiFailure banner + expected/actual
   const failure = failures?.failures.find(f => f.scenarioName === scenario?.name)
+
+  // Load video index and token breakdown for this run
+  useEffect(() => {
+    if (!resolvedRunId) return
+    fetch(`/reports/videos/index-${mod}.json`)
+      .then(r => r.json())
+      .then(setVideoIndex)
+      .catch(() => {})
+    fetch(`/reports/runs/${resolvedRunId}/token-breakdown.json`)
+      .then(r => r.json())
+      .then(setTokenBreakdown)
+      .catch(() => {})
+  }, [resolvedRunId, mod])
+
+  // MLR tag for this scenario
+  const mlrTag = (rawScenario?.tags ?? [])
+    .map((t: { name: string }) => t.name.replace('@', ''))
+    .find((t: string) => t.startsWith('MLR-'))
+
+  const scenarioVideos = mlrTag ? videoIndex[mlrTag] : null
+  const scenarioTokens = mlrTag
+    ? tokenBreakdown?.scenarios.find(s => s.tag === mlrTag)
+    : null
 
   if (loading) {
     return <div className={styles.loading}><div className={styles.spinner} /><span>Loading scenario...</span></div>
@@ -161,6 +186,56 @@ export function TestDetailPage() {
               })}
             </div>
           </section>
+
+          {/* Test Recording */}
+          {scenarioVideos?.app && (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}><Video size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />Test Recording</h2>
+              <div className={styles.videoWrap}>
+                <div className={styles.videoBlock}>
+                  <div className={styles.videoLabel}>App</div>
+                  <video
+                    className={styles.videoPlayer}
+                    src={`/reports/videos/${scenarioVideos.app}`}
+                    controls
+                    preload="metadata"
+                  />
+                </div>
+                {scenarioVideos.yopmail && (
+                  <div className={styles.videoBlock}>
+                    <div className={styles.videoLabel}>Yopmail</div>
+                    <video
+                      className={styles.videoPlayer}
+                      src={`/reports/videos/${scenarioVideos.yopmail}`}
+                      controls
+                      preload="metadata"
+                    />
+                  </div>
+                )}
+              </div>
+            </section>
+          )}
+
+          {/* Token Usage */}
+          {scenarioTokens && (
+            <section className={styles.section}>
+              <h2 className={styles.sectionTitle}><Coins size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />AI Token Usage</h2>
+              <div className={styles.tokenRow}>
+                <div className={styles.tokenCard}>
+                  <div className={styles.tokenVal}>{scenarioTokens.inputTokens.toLocaleString()}</div>
+                  <div className={styles.tokenLabel}>Input tokens</div>
+                </div>
+                <div className={styles.tokenCard}>
+                  <div className={styles.tokenVal}>{scenarioTokens.outputTokens.toLocaleString()}</div>
+                  <div className={styles.tokenLabel}>Output tokens</div>
+                </div>
+                <div className={`${styles.tokenCard} ${styles.tokenCardTotal}`}>
+                  <div className={styles.tokenVal}>{scenarioTokens.totalTokens.toLocaleString()}</div>
+                  <div className={styles.tokenLabel}>Total tokens</div>
+                </div>
+              </div>
+            </section>
+          )}
 
           {/* Developer Suggestions — heuristic-based, from failureCapture.ts */}
           {isFailed && failure?.developerSuggestions && failure.developerSuggestions.length > 0 && (
