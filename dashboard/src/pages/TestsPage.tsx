@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useRunHistory } from '../hooks/useRunHistory'
 import { useModuleRunSummaries } from '../hooks/useModuleRunSummaries'
@@ -16,12 +17,14 @@ export function TestsPage() {
   const mod = (module as ModuleName) || 'auth'
   const navigate = useNavigate()
   const { data: allRuns, loading: runsLoading } = useRunHistory()
-  // Only show runs that belong to this module (or 'full' runs which include all modules)
-  // Old timestamp-based runs (numbers) are shown on both pages for backwards compat
-  const runs = allRuns.filter(r => {
-    if (!r.module || typeof r.id === 'number') return true
-    return r.module === mod || r.module === 'full'
-  })
+  // Memoize so the array reference stays stable — prevents infinite re-fetch loop in useModuleRunSummaries
+  const runs = useMemo(() =>
+    allRuns.filter(r => {
+      if (!r.module || typeof r.id === 'number') return true
+      return r.module === mod || r.module === 'full'
+    }),
+    [allRuns, mod]
+  )
   const summaries = useModuleRunSummaries(runs, mod)
   const info = moduleInfo[mod] ?? moduleInfo.auth
 
