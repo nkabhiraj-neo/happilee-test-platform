@@ -236,3 +236,65 @@
   color: var(--text3);
   font-size: 13px;
 }
+
+/* Token usage banner */
+.tokenBanner {
+  background: linear-gradient(135deg, #faf5ff 0%, #f0f4ff 100%);
+  border: 1px solid #c4b5fd;
+  border-radius: var(--r);
+  padding: 16px 20px;
+  margin-bottom: 24px;
+}
+
+.tokenBannerTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #7c3aed;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 14px;
+}
+
+.tokenBannerCards {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.tokenBannerCard {
+  flex: 1;
+  min-width: 100px;
+  background: #fff;
+  border: 1px solid #e9d5ff;
+  border-radius: var(--r-sm);
+  padding: 12px 16px;
+  text-align: center;
+}
+
+.tokenBannerCardTotal {
+  background: #7c3aed;
+  border-color: #7c3aed;
+}
+
+.tokenBannerCardTotal .tokenBannerVal,
+.tokenBannerCardTotal .tokenBannerLabel {
+  color: #fff;
+}
+
+.tokenBannerVal {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1e1b4b;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.tokenBannerLabel {
+  font-size: 11px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}

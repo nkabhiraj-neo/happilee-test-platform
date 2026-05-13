@@ -1,12 +1,22 @@
 import { useParams, useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
 import { useModuleReport } from '../hooks/useModuleReport'
 import { Badge } from '../components/ui/Badge'
 import { formatDate, formatDuration, passRate, relativeTime } from '../utils/format'
 import {
-  ArrowLeft, CheckCircle2, XCircle, Clock, ChevronRight, FlaskConical,
+  ArrowLeft, CheckCircle2, XCircle, Clock, ChevronRight, FlaskConical, Coins, Timer,
 } from 'lucide-react'
 import type { ModuleName } from '../types'
 import styles from './RunDetailPage.module.css'
+
+interface SessionUsage {
+  sessionStartedAt: string
+  pushCompletedAt: string
+  tokenUsage: {
+    pipeline: { inputTokens: number; outputTokens: number; totalTokens: number }
+    grandTotal: { inputTokens: number; outputTokens: number; totalTokens: number }
+  }
+}
 
 const moduleInfo: Record<ModuleName, { label: string; color: string }> = {
   auth:    { label: 'Auth',    color: '#6366f1' },
@@ -23,6 +33,15 @@ export function RunDetailPage() {
     runId ?? null,
     mod,
   )
+
+  const [sessionUsage, setSessionUsage] = useState<SessionUsage | null>(null)
+  useEffect(() => {
+    if (!runId) return
+    fetch(`/reports/runs/${runId}/session-usage.json`)
+      .then(r => r.json())
+      .then(setSessionUsage)
+      .catch(() => {})
+  }, [runId])
 
   const passed  = scenarios.filter(s => s.status === 'passed').length
   const failed  = scenarios.filter(s => s.status === 'failed').length
@@ -116,6 +135,43 @@ export function RunDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Session Token Usage */}
+      {sessionUsage && (
+        <div className={styles.tokenBanner}>
+          <div className={styles.tokenBannerTitle}>
+            <Coins size={14} /> AI Token Usage — Full Run
+          </div>
+          <div className={styles.tokenBannerCards}>
+            <div className={styles.tokenBannerCard}>
+              <div className={styles.tokenBannerVal}>{sessionUsage.tokenUsage.grandTotal.inputTokens.toLocaleString()}</div>
+              <div className={styles.tokenBannerLabel}>Input tokens</div>
+            </div>
+            <div className={styles.tokenBannerCard}>
+              <div className={styles.tokenBannerVal}>{sessionUsage.tokenUsage.grandTotal.outputTokens.toLocaleString()}</div>
+              <div className={styles.tokenBannerLabel}>Output tokens</div>
+            </div>
+            <div className={`${styles.tokenBannerCard} ${styles.tokenBannerCardTotal}`}>
+              <div className={styles.tokenBannerVal}>{sessionUsage.tokenUsage.grandTotal.totalTokens.toLocaleString()}</div>
+              <div className={styles.tokenBannerLabel}>Total tokens</div>
+            </div>
+            <div className={styles.tokenBannerCard}>
+              <div className={styles.tokenBannerVal} style={{ fontSize: 15 }}>
+                <Timer size={13} style={{ marginRight: 4, verticalAlign: 'middle' }} />
+                {(() => {
+                  const start = new Date(sessionUsage.sessionStartedAt).getTime()
+                  const end = new Date(sessionUsage.pushCompletedAt).getTime()
+                  const secs = Math.round((end - start) / 1000)
+                  const m = Math.floor(secs / 60)
+                  const s = secs % 60
+                  return m > 0 ? `${m}m ${s}s` : `${s}s`
+                })()}
+              </div>
+              <div className={styles.tokenBannerLabel}>Run duration</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Scenarios table */}
       <div className={styles.tableWrap}>
