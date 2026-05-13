@@ -1,7 +1,7 @@
 {
-  "generatedAt": "2026-04-30T05:43:42.947Z",
-  "source": "post-e2e-failures",
-  "inputTokens": 983,
-  "outputTokens": 1216,
-  "totalTokens": 2199
+  "generatedAt": "2026-05-13T06:45:34.130Z",
+  "runId": "auth-test-4",
+  "inputTokens": 15416,
+  "outputTokens": 5947,
+  "totalTokens": 21363
 }

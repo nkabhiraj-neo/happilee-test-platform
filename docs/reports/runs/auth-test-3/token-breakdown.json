@@ -1,0 +1,51 @@
+{
+  "runId": "auth-test-3",
+  "generatedAt": "2026-05-13T06:40:15.333Z",
+  "scenarios": [
+    {
+      "module": "project",
+      "tag": "MLR-902",
+      "scenario": "Project listing display",
+      "inputTokens": 3218,
+      "outputTokens": 1145,
+      "totalTokens": 4363
+    },
+    {
+      "module": "project",
+      "tag": "MLR-903",
+      "scenario": "Create new project positive",
+      "inputTokens": 3740,
+      "outputTokens": 1453,
+      "totalTokens": 5193
+    },
+    {
+      "module": "project",
+      "tag": "MLR-906",
+      "scenario": "Project listing refresh",
+      "inputTokens": 3745,
+      "outputTokens": 1340,
+      "totalTokens": 5085
+    },
+    {
+      "module": "project",
+      "tag": "MLR-907",
+      "scenario": "Invalid project data negative",
+      "inputTokens": 3203,
+      "outputTokens": 1314,
+      "totalTokens": 4517
+    },
+    {
+      "module": "project",
+      "tag": "MLR-908",
+      "scenario": "Cancel project creation",
+      "inputTokens": 1510,
+      "outputTokens": 1005,
+      "totalTokens": 2515
+    }
+  ],
+  "total": {
+    "inputTokens": 15416,
+    "outputTokens": 6257,
+    "totalTokens": 21673
+  }
+}

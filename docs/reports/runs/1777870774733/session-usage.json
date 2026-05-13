@@ -1,0 +1,28 @@
+{
+  "runId": 1777870774733,
+  "generatedAt": "2026-05-04T05:02:26.099Z",
+  "sessionStartedAt": "2026-05-04T04:59:34.733Z",
+  "pushStartedAt": "2026-05-04T05:02:16.186Z",
+  "pushCompletedAt": "2026-05-04T05:02:26.085Z",
+  "pushSuccess": true,
+  "pushError": null,
+  "tokenUsage": {
+    "pipeline": {
+      "inputTokens": 983,
+      "outputTokens": 1216,
+      "totalTokens": 2199
+    },
+    "cursor": {
+      "source": "docs\\reports\\cursor-usage.json",
+      "available": false,
+      "inputTokens": 0,
+      "outputTokens": 0,
+      "totalTokens": 0
+    },
+    "grandTotal": {
+      "inputTokens": 983,
+      "outputTokens": 1216,
+      "totalTokens": 2199
+    }
+  }
+}

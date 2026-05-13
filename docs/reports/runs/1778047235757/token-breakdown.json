@@ -1,0 +1,59 @@
+{
+  "runId": 1778047235757,
+  "generatedAt": "2026-05-06T06:03:20.968Z",
+  "scenarios": [
+    {
+      "module": "auth",
+      "tag": "MLR-201",
+      "scenario": "Login with valid email navigates to OTP entry page",
+      "inputTokens": 3677,
+      "outputTokens": 1432,
+      "totalTokens": 5109
+    },
+    {
+      "module": "auth",
+      "tag": "MLR-203",
+      "scenario": "OTP entry with correct OTP navigates to project listing page",
+      "inputTokens": 3714,
+      "outputTokens": 1392,
+      "totalTokens": 5106
+    },
+    {
+      "module": "auth",
+      "tag": "MLR-204",
+      "scenario": "OTP entry with incorrect OTP shows error and user remains on OTP page",
+      "inputTokens": 3692,
+      "outputTokens": 1364,
+      "totalTokens": 5056
+    },
+    {
+      "module": "auth",
+      "tag": "MLR-209",
+      "scenario": "Multiple valid email attempts each navigate to OTP page",
+      "inputTokens": 3694,
+      "outputTokens": 1599,
+      "totalTokens": 5293
+    },
+    {
+      "module": "project",
+      "tag": "MLR-903",
+      "scenario": "Create new project positive",
+      "inputTokens": 2979,
+      "outputTokens": 1241,
+      "totalTokens": 4220
+    },
+    {
+      "module": "project",
+      "tag": "MLR-906",
+      "scenario": "Project listing refresh",
+      "inputTokens": 3316,
+      "outputTokens": 1303,
+      "totalTokens": 4619
+    }
+  ],
+  "total": {
+    "inputTokens": 21072,
+    "outputTokens": 8331,
+    "totalTokens": 29403
+  }
+}
