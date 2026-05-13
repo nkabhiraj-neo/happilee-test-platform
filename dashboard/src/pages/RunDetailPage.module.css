@@ -1,0 +1,238 @@
+.page {
+  padding: 24px 32px;
+  animation: fadeIn 0.25s ease;
+  width: 100%;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  height: 60vh;
+  color: var(--text3);
+  font-size: 14px;
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--border2);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.topBar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.back {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 13px;
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text2);
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.back:hover { background: var(--surface2); }
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text3);
+}
+
+.breadLink {
+  cursor: pointer;
+  color: var(--blue);
+  transition: opacity 0.15s;
+}
+.breadLink:hover { opacity: 0.7; }
+
+.header { margin-bottom: 20px; }
+
+.moduleTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 10px;
+}
+
+.title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+
+.subtitle {
+  font-size: 13px;
+  color: var(--text3);
+  margin-top: 3px;
+}
+
+/* Summary row */
+.summaryRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.sumCard {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 18px;
+  box-shadow: var(--shadow-sm);
+  min-width: 110px;
+}
+
+.sumIcon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sumVal {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.sumLabel {
+  font-size: 11px;
+  color: var(--text3);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-top: 3px;
+}
+
+.rateBarWrap {
+  flex: 1;
+  min-width: 120px;
+}
+
+.rateTrack {
+  height: 8px;
+  background: var(--border2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.rateFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s ease;
+}
+
+/* Table */
+.tableWrap {
+  background: var(--surface);
+  border-radius: var(--r);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.table thead tr {
+  background: var(--surface2);
+  border-bottom: 1px solid var(--border2);
+}
+
+.table th {
+  padding: 11px 16px;
+  text-align: left;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.row {
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.row:last-child { border-bottom: none; }
+.row:hover { background: #f4f7ff; }
+.failRow { background: #fff8f8; }
+.failRow:hover { background: #fff0f0 !important; }
+
+.table td {
+  padding: 13px 16px;
+  vertical-align: middle;
+}
+
+.num { color: var(--text3); font-size: 12px; font-family: var(--mono); width: 40px; }
+.nameCell { min-width: 280px; }
+.scenarioName { font-weight: 600; color: var(--text); line-height: 1.35; }
+
+.featureCell {
+  font-size: 12px;
+  color: var(--text3);
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.steps { font-family: var(--mono); font-size: 12px; white-space: nowrap; }
+.stepPass { color: var(--pass); font-weight: 700; }
+.stepFail { color: var(--fail); font-weight: 700; }
+.stepSep { color: var(--text3); margin: 0 1px; }
+.stepTotal { color: var(--text3); }
+
+.duration { font-size: 12px; font-family: var(--mono); color: var(--text2); white-space: nowrap; }
+
+.empty {
+  padding: 60px;
+  text-align: center;
+  color: var(--text3);
+  font-size: 13px;
+}

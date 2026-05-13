@@ -1,0 +1,56 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --green: #25D366;
+  --green-d: #128C7E;
+  --blue: #6366f1;
+  --navy: #1e1b4b;
+  --teal: #00C4B4;
+  --pass: #16a34a;
+  --pass-bg: #dcfce7;
+  --pass-ring: #86efac;
+  --fail: #dc2626;
+  --fail-bg: #fee2e2;
+  --fail-ring: #fca5a5;
+  --skip: #d97706;
+  --skip-bg: #fef3c7;
+  --skip-ring: #fcd34d;
+  --font: 'Inter', system-ui, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+  --bg: #f0f4f8;
+  --surface: #ffffff;
+  --surface2: #f8fafc;
+  --border: rgba(0, 0, 0, 0.07);
+  --border2: rgba(0, 0, 0, 0.13);
+  --text: #0f172a;
+  --text2: #475569;
+  --text3: #94a3b8;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.04);
+  --shadow: 0 2px 8px rgba(0,0,0,0.07), 0 8px 24px rgba(0,0,0,0.05);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.1), 0 24px 64px rgba(0,0,0,0.07);
+  --r: 14px;
+  --r-sm: 8px;
+  --r-lg: 20px;
+
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  color: var(--text);
+  background: var(--bg);
+}
+
+body {
+  min-height: 100vh;
+  background: var(--bg);
+}
+
+#root {
+  min-height: 100vh;
+}

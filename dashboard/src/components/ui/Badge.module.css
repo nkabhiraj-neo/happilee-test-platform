@@ -1,0 +1,46 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.sm {
+  font-size: 11px;
+  padding: 2px 7px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.passed {
+  background: var(--pass-bg);
+  color: var(--pass);
+}
+.passed .dot { background: var(--pass); }
+
+.failed {
+  background: var(--fail-bg);
+  color: var(--fail);
+}
+.failed .dot { background: var(--fail); }
+
+.skipped {
+  background: var(--skip-bg);
+  color: var(--skip);
+}
+.skipped .dot { background: var(--skip); }
+
+.pending {
+  background: #e0e7ff;
+  color: #4338ca;
+}
+.pending .dot { background: #4338ca; }
