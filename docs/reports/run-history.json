@@ -49,5 +49,13 @@
     "totalScenarios": 12,
     "passedScenarios": 7,
     "failedScenarios": 5
+  },
+  {
+    "id": "project-test-1",
+    "timestamp": "2026-05-13T07:26:21.373Z",
+    "label": "❌ 5 failed / 12 scenarios",
+    "totalScenarios": 12,
+    "passedScenarios": 7,
+    "failedScenarios": 5
   }
 ]

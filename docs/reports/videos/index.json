@@ -1,50 +1,50 @@
 {
   "MLR-201": {
-    "app": "auth-test-4-auth-MLR-201-app.webm",
-    "yopmail": "auth-test-4-auth-MLR-201-yopmail.webm"
+    "app": "project-test-1-auth-MLR-201-app.webm",
+    "yopmail": "project-test-1-auth-MLR-201-yopmail.webm"
   },
   "MLR-202": {
-    "app": "auth-test-4-auth-MLR-202-app.webm",
+    "app": "project-test-1-auth-MLR-202-app.webm",
     "yopmail": null
   },
   "MLR-203": {
-    "app": "auth-test-4-auth-MLR-203-app.webm",
-    "yopmail": "auth-test-4-auth-MLR-203-yopmail.webm"
+    "app": "project-test-1-auth-MLR-203-app.webm",
+    "yopmail": "project-test-1-auth-MLR-203-yopmail.webm"
   },
   "MLR-204": {
-    "app": "auth-test-4-auth-MLR-204-app.webm",
+    "app": "project-test-1-auth-MLR-204-app.webm",
     "yopmail": null
   },
   "MLR-209": {
-    "app": "auth-test-4-auth-MLR-209-app.webm",
+    "app": "project-test-1-auth-MLR-209-app.webm",
     "yopmail": null
   },
   "MLR-901": {
-    "app": "auth-test-4-project-MLR-901-app.webm",
-    "yopmail": "auth-test-4-project-MLR-901-yopmail.webm"
+    "app": "project-test-1-project-MLR-901-app.webm",
+    "yopmail": "project-test-1-project-MLR-901-yopmail.webm"
   },
   "MLR-902": {
-    "app": "auth-test-4-project-MLR-902-app.webm",
+    "app": "project-test-1-project-MLR-902-app.webm",
     "yopmail": null
   },
   "MLR-903": {
-    "app": "auth-test-4-project-MLR-903-app.webm",
-    "yopmail": "auth-test-4-project-MLR-903-yopmail.webm"
+    "app": "project-test-1-project-MLR-903-app.webm",
+    "yopmail": "project-test-1-project-MLR-903-yopmail.webm"
   },
   "MLR-904": {
-    "app": "auth-test-4-project-MLR-904-app.webm",
-    "yopmail": "auth-test-4-project-MLR-904-yopmail.webm"
+    "app": "project-test-1-project-MLR-904-app.webm",
+    "yopmail": "project-test-1-project-MLR-904-yopmail.webm"
   },
   "MLR-906": {
-    "app": "auth-test-4-project-MLR-906-app.webm",
-    "yopmail": "auth-test-4-project-MLR-906-yopmail.webm"
+    "app": "project-test-1-project-MLR-906-app.webm",
+    "yopmail": "project-test-1-project-MLR-906-yopmail.webm"
   },
   "MLR-907": {
-    "app": "auth-test-4-project-MLR-907-app.webm",
-    "yopmail": "auth-test-4-project-MLR-907-yopmail.webm"
+    "app": "project-test-1-project-MLR-907-app.webm",
+    "yopmail": "project-test-1-project-MLR-907-yopmail.webm"
   },
   "MLR-908": {
-    "app": "auth-test-4-project-MLR-908-app.webm",
-    "yopmail": "auth-test-4-project-MLR-908-yopmail.webm"
+    "app": "project-test-1-project-MLR-908-app.webm",
+    "yopmail": "project-test-1-project-MLR-908-yopmail.webm"
   }
 }
