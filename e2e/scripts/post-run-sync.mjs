@@ -578,14 +578,178 @@ if (!ANTHROPIC_API_KEY || ANTHROPIC_API_KEY === 'your_key_here') {
   if (anyFailures) {
     console.log('\n✅ AI analysis injected into dashboard JSON');
     if (process.env.QA_CREATE_TICKETS === '1') {
-      console.log('🎫 Creating tickets...');
-      execSync('node e2e/scripts/post-e2e-failures.mjs', { stdio: 'inherit' });
-      console.log('✅ Tickets created');
+      await createTicketsForRun();
     }
   } else {
     console.log('\n✅ All scenarios passed — no AI analysis needed');
   }
   doGitPush();
+}
+
+async function createJiraTicket(scenario, aiAnalysis) {
+  const jiraBase = process.env.JIRA_BASE_URL;
+  const jiraEmail = process.env.JIRA_EMAIL;
+  const jiraToken = process.env.JIRA_API_TOKEN;
+  const projectKey = process.env.JIRA_PROJECT_KEY || 'BUG';
+  const assigneeId = process.env.JIRA_ASSIGNEE_ACCOUNT_ID;
+  if (!jiraBase || !jiraEmail || !jiraToken) return null;
+
+  const auth = Buffer.from(`${jiraEmail}:${jiraToken}`).toString('base64');
+  const body = JSON.stringify({
+    fields: {
+      project: { key: projectKey },
+      summary: aiAnalysis.ticket_title || scenario.name,
+      issuetype: { name: 'Bug' },
+      priority: { name: aiAnalysis.severity === 'CRITICAL' ? 'Highest' : aiAnalysis.severity === 'HIGH' ? 'High' : 'Medium' },
+      ...(assigneeId ? { assignee: { accountId: assigneeId } } : {}),
+      labels: ['automated-test-detected'],
+      description: {
+        type: 'doc', version: 1,
+        content: [{ type: 'paragraph', content: [{ type: 'text', text: aiAnalysis.ticket_body || aiAnalysis.what_happened || '' }] }]
+      }
+    }
+  });
+
+  try {
+    const url = new URL('/rest/api/3/issue', jiraBase);
+    const res = await fetch(url.href, {
+      method: 'POST',
+      headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body,
+    });
+    const data = await res.json();
+    if (!res.ok) { console.error(`  ❌ Jira error: ${JSON.stringify(data)}`); return null; }
+    return { key: data.key, url: `${jiraBase}/browse/${data.key}` };
+  } catch (e) {
+    console.error(`  ❌ Jira request failed: ${e.message}`);
+    return null;
+  }
+}
+
+async function createGitHubIssue(scenario, aiAnalysis) {
+  const ghToken = process.env.GITHUB_TOKEN;
+  const ghRepo = process.env.GITHUB_REPO; // e.g. https://github.com/owner/repo
+  if (!ghToken || !ghRepo) return null;
+
+  const match = ghRepo.match(/github\.com\/([^/]+)\/([^/]+)/);
+  if (!match) return null;
+  const [, owner, repo] = match;
+
+  const body = JSON.stringify({
+    title: aiAnalysis.ticket_title || scenario.name,
+    body: aiAnalysis.ticket_body || aiAnalysis.what_happened || '',
+    labels: ['bug', 'automated-test-detected'],
+    ...(process.env.GITHUB_ASSIGNEE_USERNAME ? { assignees: [process.env.GITHUB_ASSIGNEE_USERNAME] } : {}),
+  });
+
+  try {
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues`, {
+      method: 'POST',
+      headers: { 'Authorization': `token ${ghToken}`, 'Accept': 'application/vnd.github.v3+json', 'User-Agent': 'happilee-test-platform', 'Content-Type': 'application/json' },
+      body,
+    });
+    const data = await res.json();
+    if (!res.ok) { console.error(`  ❌ GitHub error: ${JSON.stringify(data)}`); return null; }
+    return { number: data.number, url: data.html_url };
+  } catch (e) {
+    console.error(`  ❌ GitHub request failed: ${e.message}`);
+    return null;
+  }
+}
+
+async function createTicketsForRun() {
+  console.log('\n🎫 Creating tickets for ticket-worthy failures...');
+  const ticketsMap = {};
+
+  const reports = fs.readdirSync('docs/reports').filter(f => f.endsWith('.json') && f.startsWith('_hap_fe_'));
+  for (const reportFile of reports) {
+    const dashboardJson = JSON.parse(fs.readFileSync(path.join('docs/reports', reportFile), 'utf8'));
+    const featuresArray = dashboardJson.features || [];
+
+    for (const feature of featuresArray) {
+      for (const scenario of (feature.elements || [])) {
+        const ai = scenario.aiAnalysis;
+        if (!ai?.ticket_worthy) continue;
+
+        const mlrTag = (scenario.tags || []).map(t => t.name.replace('@', '')).find(t => t.startsWith('MLR-'));
+        if (!mlrTag) continue;
+        if (ticketsMap[mlrTag]) continue; // already processed
+
+        console.log(`  🎫 ${mlrTag} — ${scenario.name}`);
+
+        const [jira, github] = await Promise.all([
+          createJiraTicket(scenario, ai),
+          createGitHubIssue(scenario, ai),
+        ]);
+
+        if (jira) console.log(`     ✅ Jira: ${jira.key} — ${jira.url}`);
+        if (github) console.log(`     ✅ GitHub: #${github.number} — ${github.url}`);
+
+        ticketsMap[mlrTag] = {
+          jira: jira ? {
+            key: jira.key,
+            url: jira.url,
+            title: ai.ticket_title || scenario.name,
+            status: 'To Do',
+            priority: ai.severity === 'CRITICAL' ? 'Highest' : ai.severity === 'HIGH' ? 'High' : 'Medium',
+            type: 'Bug',
+            assignee: process.env.JIRA_ASSIGNEE_ACCOUNT_ID ? 'Assigned' : null,
+            createdAt: new Date().toISOString(),
+          } : null,
+          github: github ? {
+            number: github.number,
+            url: github.url,
+            title: ai.ticket_title || scenario.name,
+            status: 'open',
+            assignee: process.env.GITHUB_ASSIGNEE_USERNAME || null,
+            createdAt: new Date().toISOString(),
+          } : null,
+        };
+      }
+    }
+  }
+
+  if (Object.keys(ticketsMap).length > 0) {
+    // Write per-run tickets.json
+    const ticketsFile = `docs/reports/runs/${RUN_ID}/tickets.json`;
+    fs.mkdirSync(path.dirname(ticketsFile), { recursive: true });
+    fs.writeFileSync(ticketsFile, JSON.stringify({
+      runId: RUN_ID,
+      generatedAt: new Date().toISOString(),
+      tickets: ticketsMap,
+    }, null, 2));
+
+    // Append to global all-tickets.json (read by IntegrationsPage)
+    const allTicketsFile = 'docs/reports/all-tickets.json';
+    let allTickets = [];
+    try { if (fs.existsSync(allTicketsFile)) allTickets = JSON.parse(fs.readFileSync(allTicketsFile, 'utf8')); } catch {}
+
+    for (const [mlrTag, refs] of Object.entries(ticketsMap)) {
+      // Find scenario info from reports
+      let scenarioName = mlrTag, errorSummary = '', module = 'unknown', failedAt = new Date().toISOString();
+      for (const reportFile of fs.readdirSync('docs/reports').filter(f => f.startsWith('_hap_fe_') && f.endsWith('.json'))) {
+        const d = JSON.parse(fs.readFileSync(path.join('docs/reports', reportFile), 'utf8'));
+        for (const feat of (d.features || [])) {
+          for (const el of (feat.elements || [])) {
+            const tag = (el.tags || []).map(t => t.name.replace('@','')).find(t => t.startsWith('MLR-'));
+            if (tag === mlrTag) {
+              scenarioName = el.name;
+              module = reportFile.replace('_hap_fe_','').replace('.json','');
+              const failedStep = (el.steps||[]).find(s => s.result?.status === 'failed');
+              errorSummary = failedStep?.result?.error_message?.split('\n')[0]?.substring(0,120) || '';
+            }
+          }
+        }
+      }
+      // Remove any existing entry for this mlrTag+runId to avoid dupes
+      allTickets = allTickets.filter(e => !(e.mlrTag === mlrTag && e.runId === RUN_ID));
+      allTickets.push({ mlrTag, runId: RUN_ID, scenarioName, module, failedAt, errorSummary, ...refs });
+    }
+    fs.writeFileSync(allTicketsFile, JSON.stringify(allTickets, null, 2));
+    console.log(`✅ Wrote ${Object.keys(ticketsMap).length} ticket(s) to ${ticketsFile} + all-tickets.json`);
+  } else {
+    console.log('  ℹ️  No ticket-worthy failures found.');
+  }
 }
 
 function doGitPush() {

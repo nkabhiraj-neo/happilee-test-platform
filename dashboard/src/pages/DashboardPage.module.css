@@ -478,6 +478,114 @@
 .step_skipped { background: var(--skip); }
 .step_pending { background: #94a3b8; }
 
+/* Module Health Row */
+.moduleHealthRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.healthCard {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px 18px;
+  box-shadow: var(--shadow-sm);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.healthCard:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+
+.healthLeft {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.healthModName {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.healthMid {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.healthPill {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 2px 10px;
+  border-radius: 20px;
+  flex-shrink: 0;
+}
+
+.healthPillPass {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.healthPillFail {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.healthDetail {
+  font-size: 11.5px;
+  color: var(--text3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Severity badge in failure cards */
+.severityBadge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.sev_critical { background: #fce7f3; color: #9d174d; }
+.sev_high     { background: #fee2e2; color: #b91c1c; }
+.sev_medium   { background: #fef3c7; color: #92400e; }
+.sev_low      { background: #e0f2fe; color: #0369a1; }
+
+/* Failure card action row */
+.failureActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 10px;
+}
+
+.viewDetailsBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 12px;
+  border-radius: 7px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.viewDetailsBtn:hover { opacity: 0.85; }
+
 /* Integrations */
 .integrations {
   display: grid;

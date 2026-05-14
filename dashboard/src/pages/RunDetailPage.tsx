@@ -1,10 +1,11 @@
 import { useParams, useNavigate } from 'react-router-dom'
 import { useState, useEffect } from 'react'
 import { useModuleReport } from '../hooks/useModuleReport'
+import { useRunTickets } from '../hooks/useRunTickets'
 import { Badge } from '../components/ui/Badge'
 import { formatDate, formatDuration, passRate, relativeTime } from '../utils/format'
 import {
-  ArrowLeft, CheckCircle2, XCircle, Clock, ChevronRight, FlaskConical, Coins, Timer,
+  ArrowLeft, CheckCircle2, XCircle, Clock, ChevronRight, FlaskConical, Coins, Timer, Ticket, GitBranch,
 } from 'lucide-react'
 import type { ModuleName } from '../types'
 import styles from './RunDetailPage.module.css'
@@ -33,6 +34,7 @@ export function RunDetailPage() {
     runId ?? null,
     mod,
   )
+  const { getTickets } = useRunTickets(runId ?? null)
 
   const [sessionUsage, setSessionUsage] = useState<SessionUsage | null>(null)
   useEffect(() => {
@@ -184,6 +186,7 @@ export function RunDetailPage() {
               <th>Status</th>
               <th>Steps</th>
               <th>Duration</th>
+              <th>Tickets</th>
               <th></th>
             </tr>
           </thead>
@@ -204,6 +207,25 @@ export function RunDetailPage() {
                   <span className={styles.stepTotal}>/{s.stepsTotal}</span>
                 </td>
                 <td className={styles.duration}>{formatDuration(s.durationMs)}</td>
+                <td className={styles.ticketsCell} onClick={e => e.stopPropagation()}>
+                  {(() => {
+                    const t = getTickets(s.mlrTag)
+                    return (
+                      <>
+                        {t?.jira && (
+                          <a href={t.jira.url} target="_blank" rel="noreferrer" className={styles.jiraBadge}>
+                            <Ticket size={10} /> {t.jira.key}
+                          </a>
+                        )}
+                        {t?.github && (
+                          <a href={t.github.url} target="_blank" rel="noreferrer" className={styles.githubBadge}>
+                            <GitBranch size={10} /> #{t.github.number}
+                          </a>
+                        )}
+                      </>
+                    )
+                  })()}
+                </td>
                 <td><ChevronRight size={13} style={{ color: 'var(--text3)' }} /></td>
               </tr>
             ))}

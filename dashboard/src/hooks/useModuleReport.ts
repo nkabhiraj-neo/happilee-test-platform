@@ -14,6 +14,10 @@ function extractScenarios(report: ModuleReport, module: ModuleName): ScenarioRow
       if (failed > 0) status = 'failed'
       else if (visibleSteps.every(s => s.result.status === 'skipped')) status = 'skipped'
 
+      const mlrTag = (el.tags ?? [])
+        .map((t: { name: string }) => t.name.replace('@', ''))
+        .find((t: string) => t.startsWith('MLR-'))
+
       rows.push({
         id: el.id,
         name: el.name,
@@ -25,6 +29,7 @@ function extractScenarios(report: ModuleReport, module: ModuleName): ScenarioRow
         stepsFailed: failed,
         module,
         runId: report._meta.runId,
+        mlrTag,
       })
     }
   }

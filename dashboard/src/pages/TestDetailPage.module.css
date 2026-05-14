@@ -1022,3 +1022,117 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+
+/* ── Linked Tickets ──────────────────────────────────────────────── */
+.ticketsSection {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 18px 20px;
+  margin-bottom: 16px;
+}
+
+.ticketCards {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.ticketCard {
+  flex: 1;
+  min-width: 260px;
+  max-width: 420px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ticketCardHeader {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ticketSource {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text3);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.ticketStatus {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+}
+
+.jiraStatusDefault,
+.jiraStatus_to_do     { background: #f1f5f9; color: #64748b; }
+.jiraStatus_in_progress { background: #eff6ff; color: #1d4ed8; }
+.jiraStatus_done      { background: #f0fdf4; color: #16a34a; }
+.jiraStatus_closed    { background: #f0fdf4; color: #16a34a; }
+
+.ghOpen   { background: #f0fdf4; color: #16a34a; }
+.ghClosed { background: #fef2f2; color: #dc2626; }
+
+.ticketPriority {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 10px;
+}
+
+.ticketPriority[data-priority="highest"],
+.ticketPriority[data-priority="critical"] { background: #fef2f2; color: #dc2626; }
+.ticketPriority[data-priority="high"]     { background: #fff7ed; color: #c2410c; }
+.ticketPriority[data-priority="medium"]   { background: #fefce8; color: #a16207; }
+.ticketPriority[data-priority="low"]      { background: #f0fdf4; color: #16a34a; }
+
+.ticketKey {
+  font-size: 13px;
+  font-weight: 700;
+  color: #1d4ed8;
+  font-family: var(--font-mono, monospace);
+}
+
+.ticketTitle {
+  font-size: 13px;
+  color: var(--text1);
+  line-height: 1.45;
+  font-weight: 500;
+}
+
+.ticketMeta {
+  display: flex;
+  gap: 12px;
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.ticketLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #1d4ed8;
+  text-decoration: none;
+}
+
+.ticketLink:hover {
+  text-decoration: underline;
+}

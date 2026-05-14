@@ -1,0 +1,32 @@
+{
+  "runId": "project-test-1",
+  "generatedAt": "2026-05-13T14:00:00.000Z",
+  "tickets": {
+    "MLR-903": {
+      "jira": {
+        "key": "BUG-21",
+        "url": "https://neoito-team-abhiraj.atlassian.net/browse/BUG-21",
+        "title": "[CRITICAL] Project creation broken — backend rejects profilePicUrl field with 500 error on POST /api/v1/launchNewProject",
+        "status": "To Do",
+        "priority": "Highest",
+        "type": "Bug",
+        "assignee": "NK Abhiraj",
+        "createdAt": "2026-05-13T14:00:00.000Z"
+      },
+      "github": null
+    },
+    "MLR-906": {
+      "jira": {
+        "key": "BUG-21",
+        "url": "https://neoito-team-abhiraj.atlassian.net/browse/BUG-21",
+        "title": "[CRITICAL] Project creation broken — backend rejects profilePicUrl field with 500 error on POST /api/v1/launchNewProject",
+        "status": "To Do",
+        "priority": "Highest",
+        "type": "Bug",
+        "assignee": "NK Abhiraj",
+        "createdAt": "2026-05-13T14:00:00.000Z"
+      },
+      "github": null
+    }
+  }
+}

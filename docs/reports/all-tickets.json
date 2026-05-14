@@ -1,0 +1,106 @@
+[
+  {
+    "mlrTag": "MLR-903",
+    "runId": "project-test-1",
+    "scenarioName": "Create new project positive",
+    "module": "project",
+    "failedAt": "2026-05-13T14:00:00.000Z",
+    "errorSummary": "locator.waitFor: Timeout 30000ms exceeded — project listing never appeared after API 500",
+    "jira": {
+      "key": "BUG-21",
+      "url": "https://neoito-team-abhiraj.atlassian.net/browse/BUG-21",
+      "title": "[CRITICAL] Project creation broken — backend rejects profilePicUrl field with 500 error",
+      "status": "To Do",
+      "priority": "Highest",
+      "type": "Bug",
+      "assignee": "NK Abhiraj",
+      "createdAt": "2026-05-13T14:00:00.000Z"
+    },
+    "github": {
+      "number": 11,
+      "url": "https://github.com/nkabhiraj-neo/happilee-test-platform/issues/11",
+      "title": "[E2E] Create new project positive - \"profilePicUrl\" is not allowed",
+      "status": "open",
+      "assignee": null,
+      "createdAt": "2026-04-28T15:24:25Z"
+    }
+  },
+  {
+    "mlrTag": "MLR-906",
+    "runId": "project-test-1",
+    "scenarioName": "Project listing refresh",
+    "module": "project",
+    "failedAt": "2026-05-13T14:00:00.000Z",
+    "errorSummary": "locator.waitFor: Timeout 30000ms exceeded — same root cause as MLR-903 (profilePicUrl 500)",
+    "jira": {
+      "key": "BUG-20",
+      "url": "https://neoito-team-abhiraj.atlassian.net/browse/BUG-20",
+      "title": "[E2E] Create new project positive",
+      "status": "To Do",
+      "priority": "Medium",
+      "type": "Bug",
+      "assignee": null,
+      "createdAt": "2026-04-28T15:14:50Z"
+    },
+    "github": {
+      "number": 10,
+      "url": "https://github.com/nkabhiraj-neo/happilee-test-platform/issues/10",
+      "title": "[E2E] Create new project positive",
+      "status": "open",
+      "assignee": null,
+      "createdAt": "2026-04-28T15:14:50Z"
+    }
+  },
+  {
+    "mlrTag": null,
+    "runId": null,
+    "scenarioName": "Dashboard date filter — verify stats and graph update correctly",
+    "module": "auth",
+    "failedAt": "2026-04-23T12:18:55Z",
+    "errorSummary": "E2E test failure — dashboard date filter not updating stats and graph",
+    "jira": {
+      "key": "BUG-10",
+      "url": "https://neoito-team-abhiraj.atlassian.net/browse/BUG-10",
+      "title": "[E2E] Dashboard date filter — verify stats and graph update correctly",
+      "status": "To Do",
+      "priority": "Highest",
+      "type": "Bug",
+      "assignee": null,
+      "createdAt": "2026-04-23T12:18:55Z"
+    },
+    "github": {
+      "number": 1,
+      "url": "https://github.com/nkabhiraj-neo/happilee-test-platform/issues/1",
+      "title": "[E2E] Dashboard date filter — verify stats and graph update correctly",
+      "status": "open",
+      "assignee": null,
+      "createdAt": "2026-04-23T12:18:55Z"
+    }
+  },
+  {
+    "mlrTag": null,
+    "runId": null,
+    "scenarioName": "Filter component UI — verify filters work on all pages",
+    "module": "auth",
+    "failedAt": "2026-04-23T12:18:56Z",
+    "errorSummary": "E2E test failure — filter component not working across all pages",
+    "jira": {
+      "key": "BUG-5",
+      "url": "https://neoito-team-abhiraj.atlassian.net/browse/BUG-5",
+      "title": "Filter component UI — verify filters work on all pages",
+      "status": "To Do",
+      "priority": "High",
+      "type": "Bug",
+      "assignee": null,
+      "createdAt": "2026-04-23T12:18:56Z"
+    },
+    "github": {
+      "number": 2,
+      "url": "https://github.com/nkabhiraj-neo/happilee-test-platform/issues/2",
+      "title": "Filter component UI — verify filters work on all pages",
+      "status": "open",
+      "assignee": null,
+      "createdAt": "2026-04-23T12:18:56Z"
+    }
+  }
+]

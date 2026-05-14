@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
@@ -6,18 +6,18 @@ import {
 } from 'recharts'
 import {
   CheckCircle2, XCircle, FlaskConical, TrendingUp,
-  AlertTriangle, Clock, Ticket, GitBranch, Brain,
+  AlertTriangle, Brain,
   ChevronRight, ChevronDown, ShieldCheck, FolderKanban,
+  Ticket, GitBranch,
 } from 'lucide-react'
-
 import { useRunHistory } from '../hooks/useRunHistory'
 import { useModuleReport } from '../hooks/useModuleReport'
 import { useModuleRunSummaries } from '../hooks/useModuleRunSummaries'
-import { useFailures } from '../hooks/useFailures'
+import { useAllTickets } from '../hooks/useAllTickets'
 import { StatCard } from '../components/ui/StatCard'
 import { Badge } from '../components/ui/Badge'
 import { passRate, formatDate, relativeTime } from '../utils/format'
-import type { ModuleName } from '../types'
+import type { ModuleName, RichAIAnalysis, RunSummary } from '../types'
 import styles from './DashboardPage.module.css'
 
 const modules: { key: ModuleName; label: string; icon: typeof ShieldCheck; desc: string }[] = [
@@ -25,19 +25,43 @@ const modules: { key: ModuleName; label: string; icon: typeof ShieldCheck; desc:
   { key: 'project', label: 'Project', icon: FolderKanban, desc: 'Create · List · Refresh' },
 ]
 
+// Circled digit suffixes for duplicate date labels
+const CIRCLED = ['', ' ②', ' ③', ' ④', ' ⑤', ' ⑥', ' ⑦', ' ⑧', ' ⑨', ' ⑩']
+
+function buildDateLabel(timestamp: string, seen: Map<string, number>): string {
+  const base = new Date(timestamp).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
+  const count = (seen.get(base) ?? 0) + 1
+  seen.set(base, count)
+  return count === 1 ? base : `${base}${CIRCLED[Math.min(count - 1, CIRCLED.length - 1)]}`
+}
+
 export function DashboardPage() {
   const [selectedModule, setSelectedModule] = useState<ModuleName>('auth')
   const [dropOpen, setDropOpen] = useState(false)
   const dropRef = useRef<HTMLDivElement>(null)
   const navigate = useNavigate()
 
-  const { data: runs, loading: runsLoading } = useRunHistory()
-  const { data: failures, loading: failuresLoading } = useFailures()
+  const { data: allRuns, loading: runsLoading } = useRunHistory()
+
+  // Filter runs to only those relevant to the selected module — same logic as TestsPage
+  const runs = useMemo(() =>
+    allRuns.filter((r: RunSummary) => {
+      if (!r.module || typeof r.id === 'number') return true
+      return r.module === selectedModule || r.module === 'full'
+    }),
+    [allRuns, selectedModule]
+  )
+
   const latestRunId = runs[0]?.id ?? null
-  useModuleReport(latestRunId, selectedModule) // preload for module switch
+
+  // Module report for the latest run — used for latest failures section
+  const { data: scenarios, raw } = useModuleReport(latestRunId, selectedModule)
 
   // Module-specific per-run summaries (loads in background)
   const modSummaries = useModuleRunSummaries(runs, selectedModule)
+
+  // Tickets for integration counts
+  const { data: allTickets } = useAllTickets()
 
   useEffect(() => {
     function handle(e: MouseEvent) {
@@ -55,19 +79,67 @@ export function DashboardPage() {
   const modAllTotal     = loadedSummaries.reduce((a, s) => a + s.total, 0)
   const modAllRate      = passRate(modAllPassed, modAllTotal)
 
-  // Chart data — module-specific last 15 runs (use loaded summaries, fall back to combined)
-  const chartData = [...runs].slice(0, 15).reverse().map(r => {
+  // Latest run stat card values
+  const latestSummary  = runs[0] ? modSummaries.get(runs[0].id) : undefined
+  const latestPassed   = latestSummary?.loaded ? latestSummary.passed : null
+  const latestTotal    = latestSummary?.loaded ? latestSummary.total : null
+  const latestRate     = latestTotal && latestTotal > 0 ? passRate(latestPassed ?? 0, latestTotal) : null
+  const latestRunLabel = runs[0] ? String(runs[0].id).slice(-8) : null
+
+  // Chart data — module-specific last 15 runs, date-labelled
+  const dateCountMap = new Map<string, number>()
+  const last15 = [...runs].slice(0, 15).reverse()
+  const chartData = last15.map(r => {
     const s = modSummaries.get(r.id)
+    const dateLabel = buildDateLabel(r.timestamp, dateCountMap)
     return {
-      time: new Date(r.timestamp).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+      time:   dateLabel,
+      runId:  r.id,
+      fullDate: new Date(r.timestamp).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }),
       passed: s?.loaded ? s.passed : null,
       failed: s?.loaded ? s.failed : null,
       rate:   s?.loaded && s.total > 0 ? passRate(s.passed, s.total) : null,
     }
   })
 
+  // Failed scenarios for latest failures
+  const failedScenarios = scenarios.filter(s => s.status === 'failed').slice(0, 3)
+  const allElements = raw?.features.flatMap(f => f.elements) ?? []
+
   const selectedMod = modules.find(m => m.key === selectedModule)!
   const latest = runs[0]
+
+  // Custom tooltip for BarChart
+  interface BarTooltipPayload {
+    name: string
+    value: number
+    payload: {
+      time: string
+      fullDate: string
+      runId: string | number
+      passed: number | null
+      failed: number | null
+      rate: number | null
+    }
+  }
+
+  function BarTooltipContent({ active, payload, label }: {
+    active?: boolean
+    payload?: BarTooltipPayload[]
+    label?: string
+  }) {
+    if (!active || !payload?.length) return null
+    const d = payload[0].payload
+    return (
+      <div style={{ background: '#0f172a', border: 'none', borderRadius: 8, fontSize: 12, padding: '10px 14px', color: '#e2e8f0' }}>
+        <div style={{ color: '#94a3b8', marginBottom: 4 }}>{d.fullDate || label}</div>
+        <div style={{ color: '#94a3b8', fontSize: 11, marginBottom: 6 }}>Run #{String(d.runId).slice(-8)}</div>
+        <div style={{ color: '#25D366' }}>Passed: {d.passed ?? '—'}</div>
+        <div style={{ color: '#ef4444' }}>Failed: {d.failed ?? '—'}</div>
+        {d.rate !== null && <div style={{ color: '#6366f1', marginTop: 4 }}>Pass rate: {d.rate}%</div>}
+      </div>
+    )
+  }
 
   if (runsLoading) {
     return <div className={styles.loading}><div className={styles.spinner} /><span>Loading dashboard...</span></div>
@@ -115,7 +187,7 @@ export function DashboardPage() {
         </div>
       </header>
 
-      {/* Stat Cards — driven by selected module */}
+      {/* Stat Cards */}
       <section className={styles.statsGrid}>
         <StatCard
           label="Total Runs"
@@ -139,33 +211,41 @@ export function DashboardPage() {
           accent="red"
         />
         <StatCard
-          label={`${selectedMod.label} Total`}
-          value={modAllTotal > 0 ? modAllTotal : '—'}
-          sub={`Across ${loadedSummaries.length} runs`}
+          label="Latest Run"
+          value={latestRate !== null ? `${latestRate}%` : '—'}
+          sub={latestRunLabel && latestPassed !== null
+            ? `Run #${latestRunLabel} · ${latestPassed} passed`
+            : 'Loading…'}
           icon={<CheckCircle2 size={18} />}
           accent="purple"
         />
       </section>
 
-      {/* Chart + Pass Rate Trend */}
+      {/* Charts */}
       <section className={styles.chartRow}>
         <div className={styles.chartCard}>
           <div className={styles.cardHeader}>
             <div>
               <h2 className={styles.cardTitle}>Run History</h2>
-              <p className={styles.cardSub}>Last 15 runs · all modules · passed vs failed</p>
+              <p className={styles.cardSub}>Last 15 runs · {selectedMod.label} · passed vs failed</p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={210}>
-            <BarChart data={chartData} barSize={14} barGap={3}>
+            <BarChart
+              data={chartData}
+              barSize={14}
+              barGap={3}
+              onClick={(e: any) => {
+                if (e?.activePayload?.[0]?.payload?.runId) {
+                  navigate(`/tests/${selectedModule}/run/${e.activePayload[0].payload.runId}`)
+                }
+              }}
+              style={{ cursor: 'pointer' }}
+            >
               <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.05)" vertical={false} />
               <XAxis dataKey="time" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
               <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={24} />
-              <Tooltip
-                contentStyle={{ background: '#0f172a', border: 'none', borderRadius: 8, fontSize: 12 }}
-                labelStyle={{ color: '#94a3b8' }}
-                itemStyle={{ color: '#e2e8f0' }}
-              />
+              <Tooltip content={<BarTooltipContent />} />
               <Bar dataKey="passed" name="Passed" radius={[4, 4, 0, 0]}>
                 {chartData.map((_, i) => <Cell key={i} fill="#25D366" />)}
               </Bar>
@@ -180,7 +260,7 @@ export function DashboardPage() {
           <div className={styles.cardHeader}>
             <div>
               <h2 className={styles.cardTitle}>Pass Rate Trend</h2>
-              <p className={styles.cardSub}>Last 15 runs · all modules · %</p>
+              <p className={styles.cardSub}>Last 15 runs · {selectedMod.label} · %</p>
             </div>
           </div>
           <ResponsiveContainer width="100%" height={210}>
@@ -207,47 +287,59 @@ export function DashboardPage() {
         </div>
       </section>
 
-
-      {/* Latest Failures */}
-      {!failuresLoading && failures && failures.failures.length > 0 && (
+      {/* Latest Failures — from module report AI analysis */}
+      {failedScenarios.length > 0 && (
         <section className={styles.failuresSection}>
           <div className={styles.cardHeader}>
             <div className={styles.failTitle}>
               <AlertTriangle size={15} style={{ color: '#ef4444' }} />
               <h2 className={styles.cardTitle}>Latest Failures</h2>
-              <span className={styles.failBadge}>{failures.failures.length}</span>
+              <span className={styles.failBadge}>{failedScenarios.length}</span>
             </div>
             <span className={styles.cardSub}>From last run · AI analysis included</span>
           </div>
           <div className={styles.failureGrid}>
-            {failures.failures.map((f, i) => (
-              <div key={i} className={styles.failureCard}>
-                <div className={styles.failureTop}>
-                  <Badge status="failed" size="sm" />
-                  <span className={styles.failureTime}><Clock size={11} /> {relativeTime(f.failedAt)}</span>
-                </div>
-                <div className={styles.failureName}>{f.scenarioName}</div>
-                <div className={styles.failureStep}>Failed at: <em>{f.failedStepText}</em></div>
-                {f.exactApiFailure && (
-                  <div className={styles.apiFailure}>
-                    <span className={`${styles.method} ${styles[f.exactApiFailure.method.toLowerCase()]}`}>{f.exactApiFailure.method}</span>
-                    <span className={styles.apiStatus}>{f.exactApiFailure.status}</span>
-                    <span className={styles.apiUrl}>{new URL(f.exactApiFailure.url).pathname}</span>
+            {failedScenarios.map((s, i) => {
+              const el = allElements.find(e => e.id === s.id)
+              const ai = el?.aiAnalysis as RichAIAnalysis | undefined
+              const failedStep = el?.steps.find(st => st.result.status === 'failed')
+              const severity = ai?.severity?.toLowerCase() ?? null
+
+              return (
+                <div key={i} className={styles.failureCard}>
+                  <div className={styles.failureTop}>
+                    <Badge status="failed" size="sm" />
+                    {severity && (
+                      <span className={`${styles.severityBadge} ${styles[`sev_${severity}`]}`}>
+                        {severity}
+                      </span>
+                    )}
                   </div>
-                )}
-                {f.aiAnalysis && (
-                  <div className={styles.aiSection}>
-                    <div className={styles.aiLabel}><Brain size={11} /> AI Analysis</div>
-                    <p className={styles.aiText}>{f.aiAnalysis.rootCause}</p>
+                  <div className={styles.failureName}>{s.name}</div>
+                  {failedStep && (
+                    <div className={styles.failureStep}>
+                      Failed at: <em>{failedStep.keyword}{failedStep.name}</em>
+                    </div>
+                  )}
+                  {ai && (
+                    <div className={styles.aiSection}>
+                      <div className={styles.aiLabel}><Brain size={11} /> AI Analysis</div>
+                      <p className={styles.aiText}>{ai.headline ?? ai.whatHappened ?? ai.rootCause ?? ''}</p>
+                    </div>
+                  )}
+                  <div className={styles.failureActions}>
+                    <button
+                      className={styles.viewDetailsBtn}
+                      onClick={() =>
+                        navigate(`/tests/${selectedModule}/run/${latestRunId}/scenario/${encodeURIComponent(s.id)}`)
+                      }
+                    >
+                      View details <ChevronRight size={12} />
+                    </button>
                   </div>
-                )}
-                <div className={styles.stepBar}>
-                  {f.stepTimeline.map((s, si) => (
-                    <div key={si} className={`${styles.stepDot} ${styles[`step_${s.status}`]}`} title={s.text} />
-                  ))}
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </section>
       )}
@@ -260,7 +352,7 @@ export function DashboardPage() {
           </div>
           <div className={styles.integBody}>
             <div className={styles.integName}>Jira</div>
-            <div className={styles.integSub}>{modAllFailed} failures tracked</div>
+            <div className={styles.integSub}>{allTickets.filter(t => t.jira).length} tickets tracked</div>
           </div>
           <ChevronRight size={16} style={{ color: 'var(--text3)' }} />
         </div>
@@ -270,7 +362,7 @@ export function DashboardPage() {
           </div>
           <div className={styles.integBody}>
             <div className={styles.integName}>GitHub Issues</div>
-            <div className={styles.integSub}>{modAllFailed} issues opened</div>
+            <div className={styles.integSub}>{allTickets.filter(t => t.github).length} issues opened</div>
           </div>
           <ChevronRight size={16} style={{ color: 'var(--text3)' }} />
         </div>

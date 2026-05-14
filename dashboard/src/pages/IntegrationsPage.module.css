@@ -189,3 +189,58 @@
   flex-direction: column;
   align-items: center;
 }
+
+.refreshBtn {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text2);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.refreshBtn:hover { background: var(--bg); }
+
+.spinner {
+  width: 24px; height: 24px;
+  border: 3px solid var(--border);
+  border-top-color: var(--blue);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 40px auto;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.ticketKey {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1d4ed8;
+  text-decoration: none;
+  font-family: monospace;
+}
+.ticketKey:hover { text-decoration: underline; }
+
+.scenarioName { font-weight: 500; font-size: 13px; }
+.scenarioMeta { font-size: 11px; color: var(--text3); margin-top: 2px; }
+
+.priorityBadge {
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.statusWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.liveStatus {
+  font-size: 10px;
+  font-weight: 600;
+  opacity: 0.8;
+}

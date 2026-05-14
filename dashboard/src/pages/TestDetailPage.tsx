@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useRunHistory } from '../hooks/useRunHistory'
 import { useModuleReport } from '../hooks/useModuleReport'
 import { useFailures } from '../hooks/useFailures'
+import { useRunTickets } from '../hooks/useRunTickets'
 import { Badge } from '../components/ui/Badge'
 import { formatDuration } from '../utils/format'
 import type { ModuleName, RichAIAnalysis } from '../types'
@@ -10,7 +11,7 @@ import {
   ArrowLeft, CheckCircle2, XCircle, Clock, Brain,
   Terminal, Image, ChevronRight, AlertCircle, Ticket,
   GitBranch, MapPin, Wrench, ShieldAlert, Lightbulb,
-  Code2, ShieldCheck, Video, Coins,
+  Code2, ShieldCheck, Video, Coins, ExternalLink,
 } from 'lucide-react'
 import styles from './TestDetailPage.module.css'
 
@@ -35,13 +36,15 @@ export function TestDetailPage() {
   const mod = (module as ModuleName) || 'auth'
   const navigate = useNavigate()
   const [screenshotModal, setScreenshotModal] = useState<string | null>(null)
-  const [videoIndex, setVideoIndex] = useState<Record<string, { app: string | null; yopmail: string | null }>>({})
   const [tokenBreakdown, setTokenBreakdown] = useState<{ scenarios: Array<{ tag: string; inputTokens: number; outputTokens: number; totalTokens: number }>; total: { inputTokens: number; outputTokens: number; totalTokens: number } } | null>(null)
+  const [yopmailVideoOk, setYopmailVideoOk] = useState(true)
+  const [liveJiraStatus, setLiveJiraStatus] = useState<string | null>(null)
 
   const { data: runs } = useRunHistory()
   const resolvedRunId = runId ?? (runs[0]?.id ?? null)
   const { data: scenarios, raw, loading } = useModuleReport(resolvedRunId, mod)
   const { data: failures } = useFailures()
+  const { getTickets } = useRunTickets(resolvedRunId)
 
   const decodedId = decodeURIComponent(scenarioId || '')
   const scenario = scenarios.find(s => s.id === decodedId)
@@ -56,28 +59,41 @@ export function TestDetailPage() {
   // Legacy failure data — used for exactApiFailure banner + expected/actual
   const failure = failures?.failures.find(f => f.scenarioName === scenario?.name)
 
-  // Load video index and token breakdown for this run
-  useEffect(() => {
-    if (!resolvedRunId) return
-    fetch(`/reports/videos/index-${mod}.json`)
-      .then(r => r.json())
-      .then(setVideoIndex)
-      .catch(() => {})
-    fetch(`/reports/runs/${resolvedRunId}/token-breakdown.json`)
-      .then(r => r.json())
-      .then(setTokenBreakdown)
-      .catch(() => {})
-  }, [resolvedRunId, mod])
-
   // MLR tag for this scenario
   const mlrTag = (rawScenario?.tags ?? [])
     .map((t: { name: string }) => t.name.replace('@', ''))
     .find((t: string) => t.startsWith('MLR-'))
 
-  const scenarioVideos = mlrTag ? videoIndex[mlrTag] : null
+  // Reset yopmail availability when scenario changes
+  useEffect(() => { setYopmailVideoOk(true) }, [mlrTag, resolvedRunId])
+
+  // Load token breakdown for this run
+  useEffect(() => {
+    if (!resolvedRunId) return
+    fetch(`/reports/runs/${resolvedRunId}/token-breakdown.json`)
+      .then(r => r.json())
+      .then(setTokenBreakdown)
+      .catch(() => {})
+  }, [resolvedRunId])
+
+  // Construct video filenames directly from runId + module + tag (pattern: {runId}-{mod}-{tag}-app.webm)
+  const scenarioVideos = (mlrTag && resolvedRunId) ? {
+    app: `${resolvedRunId}-${mod}-${mlrTag}-app.webm`,
+    yopmail: `${resolvedRunId}-${mod}-${mlrTag}-yopmail.webm`,
+  } : null
   const scenarioTokens = mlrTag
     ? tokenBreakdown?.scenarios.find(s => s.tag === mlrTag)
     : null
+
+  // Linked tickets from tickets.json + live Jira status via proxy
+  const linkedTickets = getTickets(mlrTag)
+  useEffect(() => {
+    if (!linkedTickets?.jira?.key) return
+    fetch(`/api/jira/issue/${linkedTickets.jira.key}?fields=status,priority,assignee`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.fields?.status?.name) setLiveJiraStatus(d.fields.status.name) })
+      .catch(() => {})
+  }, [linkedTickets?.jira?.key])
 
   if (loading) {
     return <div className={styles.loading}><div className={styles.spinner} /><span>Loading scenario...</span></div>
@@ -144,6 +160,60 @@ export function TestDetailPage() {
       <div className={styles.body}>
         <div className={styles.main}>
 
+          {/* Linked Tickets */}
+          {linkedTickets && (linkedTickets.jira || linkedTickets.github) && (
+            <section className={styles.ticketsSection}>
+              <h2 className={styles.sectionTitle}><Ticket size={15} style={{ marginRight: 6, verticalAlign: 'middle' }} />Linked Tickets</h2>
+              <div className={styles.ticketCards}>
+
+                {linkedTickets.jira && (
+                  <div className={styles.ticketCard}>
+                    <div className={styles.ticketCardHeader}>
+                      <span className={styles.ticketSource}>Jira</span>
+                      <span className={`${styles.ticketStatus} ${styles[`jiraStatus_${(liveJiraStatus ?? linkedTickets.jira.status).replace(/\s+/g, '_').toLowerCase()}`] || styles.jiraStatusDefault}`}>
+                        {liveJiraStatus ?? linkedTickets.jira.status}
+                      </span>
+                      {linkedTickets.jira.priority && (
+                        <span className={styles.ticketPriority} data-priority={linkedTickets.jira.priority.toLowerCase()}>
+                          {linkedTickets.jira.priority}
+                        </span>
+                      )}
+                    </div>
+                    <div className={styles.ticketKey}>{linkedTickets.jira.key}</div>
+                    <div className={styles.ticketTitle}>{linkedTickets.jira.title}</div>
+                    <div className={styles.ticketMeta}>
+                      {linkedTickets.jira.assignee && <span>Assignee: {linkedTickets.jira.assignee}</span>}
+                      <span>{linkedTickets.jira.type}</span>
+                    </div>
+                    <a href={linkedTickets.jira.url} target="_blank" rel="noreferrer" className={styles.ticketLink}>
+                      Open in Jira <ExternalLink size={11} />
+                    </a>
+                  </div>
+                )}
+
+                {linkedTickets.github && (
+                  <div className={styles.ticketCard}>
+                    <div className={styles.ticketCardHeader}>
+                      <span className={styles.ticketSource}>GitHub</span>
+                      <span className={`${styles.ticketStatus} ${linkedTickets.github.status === 'open' ? styles.ghOpen : styles.ghClosed}`}>
+                        {linkedTickets.github.status}
+                      </span>
+                    </div>
+                    <div className={styles.ticketKey}>#{linkedTickets.github.number}</div>
+                    <div className={styles.ticketTitle}>{linkedTickets.github.title}</div>
+                    {linkedTickets.github.assignee && (
+                      <div className={styles.ticketMeta}><span>Assignee: {linkedTickets.github.assignee}</span></div>
+                    )}
+                    <a href={linkedTickets.github.url} target="_blank" rel="noreferrer" className={styles.ticketLink}>
+                      Open in GitHub <ExternalLink size={11} />
+                    </a>
+                  </div>
+                )}
+
+              </div>
+            </section>
+          )}
+
           {/* Step Timeline */}
           <section className={styles.section}>
             <h2 className={styles.sectionTitle}>Step Timeline</h2>
@@ -201,7 +271,7 @@ export function TestDetailPage() {
                     preload="metadata"
                   />
                 </div>
-                {scenarioVideos.yopmail && (
+                {scenarioVideos.yopmail && yopmailVideoOk && (
                   <div className={styles.videoBlock}>
                     <div className={styles.videoLabel}>Yopmail</div>
                     <video
@@ -209,6 +279,7 @@ export function TestDetailPage() {
                       src={`/reports/runs/${resolvedRunId}/videos/${scenarioVideos.yopmail}`}
                       controls
                       preload="metadata"
+                      onError={() => setYopmailVideoOk(false)}
                     />
                   </div>
                 )}

@@ -141,4 +141,36 @@ export interface ScenarioRow {
   stepsFailed: number
   module: ModuleName
   runId: string | number
+  mlrTag?: string
+}
+
+export interface JiraTicket {
+  key: string
+  url: string
+  title: string
+  status: string
+  priority: string
+  type: string
+  assignee: string | null
+  createdAt: string
+}
+
+export interface GitHubIssue {
+  number: number
+  url: string
+  title: string
+  status: 'open' | 'closed'
+  assignee: string | null
+  createdAt: string
+}
+
+export interface ScenarioTickets {
+  jira: JiraTicket | null
+  github: GitHubIssue | null
+}
+
+export interface RunTickets {
+  runId: string | number
+  generatedAt: string
+  tickets: Record<string, ScenarioTickets>
 }
