@@ -6,7 +6,7 @@ export function useRunHistory() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/reports/run-history.json')
+    fetch(`${import.meta.env.BASE_URL}reports/run-history.json`)
       .then(r => r.json())
       .then((d: RunSummary[]) => setData([...d].reverse()))
       .catch(console.error)

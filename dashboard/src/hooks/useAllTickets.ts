@@ -38,7 +38,7 @@ export function useAllTickets() {
       // 1. Load static seed (has scenario/MLR linkage)
       let seed: TicketEntry[] = []
       try {
-        const r = await fetch('/reports/all-tickets.json')
+        const r = await fetch(`${import.meta.env.BASE_URL}reports/all-tickets.json`)
         if (r.ok) seed = await r.json()
       } catch {}
 

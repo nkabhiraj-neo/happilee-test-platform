@@ -44,7 +44,7 @@ export function useModuleReport(runId: string | number | null, module: ModuleNam
   useEffect(() => {
     if (runId === null || runId === undefined) return
     const fileName = module === 'auth' ? '_hap_fe_auth.json' : '_hap_fe_project.json'
-    fetch(`/reports/runs/${runId}/${fileName}`)
+    fetch(`${import.meta.env.BASE_URL}reports/runs/${runId}/${fileName}`)
       .then(r => r.json())
       .then((d: ModuleReport) => {
         setRaw(d)

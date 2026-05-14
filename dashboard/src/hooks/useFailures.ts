@@ -6,7 +6,7 @@ export function useFailures() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch('/reports/failures/last-run/summary.json')
+    fetch(`${import.meta.env.BASE_URL}reports/failures/last-run/summary.json`)
       .then(r => r.json())
       .then(setData)
       .catch(console.error)

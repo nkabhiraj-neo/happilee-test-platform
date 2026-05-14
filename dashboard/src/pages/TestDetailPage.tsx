@@ -70,7 +70,7 @@ export function TestDetailPage() {
   // Load token breakdown for this run
   useEffect(() => {
     if (!resolvedRunId) return
-    fetch(`/reports/runs/${resolvedRunId}/token-breakdown.json`)
+    fetch(`${import.meta.env.BASE_URL}reports/runs/${resolvedRunId}/token-breakdown.json`)
       .then(r => r.json())
       .then(setTokenBreakdown)
       .catch(() => {})

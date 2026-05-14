@@ -6,7 +6,7 @@ export function useRunTickets(runId: string | number | null) {
 
   useEffect(() => {
     if (!runId) return
-    fetch(`/reports/runs/${runId}/tickets.json`)
+    fetch(`${import.meta.env.BASE_URL}reports/runs/${runId}/tickets.json`)
       .then(r => r.ok ? r.json() : null)
       .then(d => setData(d))
       .catch(() => {})

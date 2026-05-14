@@ -39,7 +39,7 @@ export function RunDetailPage() {
   const [sessionUsage, setSessionUsage] = useState<SessionUsage | null>(null)
   useEffect(() => {
     if (!runId) return
-    fetch(`/reports/runs/${runId}/session-usage.json`)
+    fetch(`${import.meta.env.BASE_URL}reports/runs/${runId}/session-usage.json`)
       .then(r => r.json())
       .then(setSessionUsage)
       .catch(() => {})

@@ -11,3 +11,7 @@ e2e/reports/cucumber.json
 scratch.mjs
 scratch-stitch.mjs
 *.txt
+
+# Video files are too large for git — keep only JSON data
+docs/reports/videos/*.webm
+docs/reports/runs/*/videos/*.webm

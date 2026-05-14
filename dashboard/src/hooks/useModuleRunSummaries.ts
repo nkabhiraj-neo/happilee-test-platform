@@ -42,7 +42,7 @@ export function useModuleRunSummaries(runs: RunSummary[], module: ModuleName) {
         const batch = runs.slice(i, i + batchSize)
         await Promise.all(batch.map(async (r) => {
           try {
-            const res = await fetch(`/reports/runs/${r.id}/${fileName}`)
+            const res = await fetch(`${import.meta.env.BASE_URL}reports/runs/${r.id}/${fileName}`)
             if (!res.ok) throw new Error('not found')
             const json = await res.json()
             const counts = extractCounts(json)
