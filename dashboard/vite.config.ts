@@ -11,6 +11,7 @@ export default defineConfig(({ command, mode }) => {
 
   return {
     plugins: [react()],
+    base: command === 'build' ? '/happilee-test-platform/' : '/',
     server: {
       port: 5200,
       fs: { allow: ['..'] },
