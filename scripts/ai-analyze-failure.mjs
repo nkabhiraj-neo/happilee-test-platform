@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import Anthropic from "@anthropic-ai/sdk";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.join(__dirname, "..", "..");
+const root = path.join(__dirname, "..");
 const lastRunDir = path.join(root, "e2e", "reports", "failures", "last-run");
 const ndjsonPath = path.join(lastRunDir, "failures.ndjson");
 const analysisDir = path.join(root, "e2e", "reports", "analysis");

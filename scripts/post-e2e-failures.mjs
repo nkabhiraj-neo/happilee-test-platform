@@ -9,7 +9,7 @@ import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.join(__dirname, "..", "..");
+const root = path.join(__dirname, "..");
 const lastRun = path.join(root, "e2e", "reports", "failures", "last-run");
 const ndjsonPath = path.join(lastRun, "failures.ndjson");
 const videosDir = path.join(root, "e2e", "reports", "videos");

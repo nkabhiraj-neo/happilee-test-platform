@@ -1,5 +1,6 @@
 node_modules/
 .env
+.claude/
 codebase/
 e2e/reports/videos/
 e2e/reports/screenshots/

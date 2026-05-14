@@ -8,7 +8,7 @@ import * as path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const root = path.join(__dirname, "..", "..");
+const root = path.join(__dirname, "..");
 const reportsDir = path.join(root, "e2e", "reports");
 const stepShotsDir = path.join(reportsDir, "screenshots", "steps");
 const videosDir = path.join(reportsDir, "videos");

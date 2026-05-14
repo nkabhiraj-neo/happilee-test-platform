@@ -6,12 +6,12 @@
  * All cucumber options are passed directly as CLI args.
  *
  * Usage:
- *   node e2e/scripts/run-qa.mjs                      # headless, all modules
- *   E2E_HEADED=1 node e2e/scripts/run-qa.mjs         # headed browser
- *   node e2e/scripts/run-qa.mjs --auth-only           # only auth
- *   node e2e/scripts/run-qa.mjs --proj-only           # only project
- *   node e2e/scripts/run-qa.mjs --scenario 201        # only @MLR-201
- *   node e2e/scripts/run-qa.mjs --scenario MLR-201    # same
+ *   node scripts/run-qa.mjs                      # headless, all modules
+ *   E2E_HEADED=1 node scripts/run-qa.mjs         # headed browser
+ *   node scripts/run-qa.mjs --auth-only           # only auth
+ *   node scripts/run-qa.mjs --proj-only           # only project
+ *   node scripts/run-qa.mjs --scenario 201        # only @MLR-201
+ *   node scripts/run-qa.mjs --scenario MLR-201    # same
  */
 
 import { spawnSync } from 'node:child_process'
@@ -20,7 +20,7 @@ import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const root = path.join(__dirname, '..', '..')
+const root = path.join(__dirname, '..')
 
 
 const args = process.argv.slice(2)
@@ -149,7 +149,7 @@ const syncEnv = {
 
 const syncResult = spawnSync(
   process.execPath,
-  [path.join(root, 'e2e', 'scripts', 'post-run-sync.mjs')],
+  [path.join(root, 'scripts', 'post-run-sync.mjs')],
   { cwd: root, stdio: 'inherit', env: syncEnv }
 )
 
